@@ -1,10 +1,27 @@
 from abc import ABC
-from typing import Optional, Callable
+from typing import Protocol, Optional, Callable
 from settings import Vector
+from pygame import Rect
+
+
+class Collider(Protocol):
+    
+    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
+        ...
+
+class NoCollider:
+
+    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
+        return False
+    
+class PygameCollider:
+
+    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
+        rectangle = Rect(top_left, size)
+        return rectangle.collidepoint( point )
 
 
 def detect_hover_pygame(position: Vector, size: Vector, mouse_position: Vector) -> bool:
-    from pygame import Rect
     rectangle = Rect(position, size)
     return rectangle.collidepoint( mouse_position )
 
