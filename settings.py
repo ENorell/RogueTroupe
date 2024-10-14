@@ -8,4 +8,4 @@ GAME_FPS: Final[int] = 30
 DISPLAY_WIDTH:  Final[int] = 800
 DISPLAY_HEIGHT: Final[int] = 600
 
-COLOR_BLACK: Final[Color] = (0,0,0)
+BLACK_COLOR: Final[Color] = (0,0,0)

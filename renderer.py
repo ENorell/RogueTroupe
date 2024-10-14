@@ -4,7 +4,7 @@ from interfaces import Renderer, Loopable
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
 
 
-COLOR_DISPLAY_BACKGROUND: Final[Color] = (0, 27, 58)
+DISPLAY_BACKGROUND_COLOR: Final[Color] = (0, 27, 58)
 
 
 class NoRenderer(Renderer):
@@ -20,7 +20,7 @@ class PygameRenderer(Renderer):
 
     def render(self, loopable: Loopable) -> None:
 
-        self.frame.fill(COLOR_DISPLAY_BACKGROUND)
+        self.frame.fill(DISPLAY_BACKGROUND_COLOR)
 
         self.draw_frame(loopable)
         

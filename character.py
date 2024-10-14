@@ -5,7 +5,7 @@ from character_slot import CharacterSlot
 from pygame import Surface, Rect, draw, Vector2
 
 
-COLOR_CHARACTER: Final[Color] = (100, 50 ,230)
+CHARACTER_COLOR: Final[Color] = (100, 50 ,230)
 
 
 class Character(Interactable):
@@ -29,7 +29,7 @@ class Character(Interactable):
 
 
 def draw_character(frame: Surface, character: Character, color_override: Optional[Color] = None):
-    color = COLOR_CHARACTER if not color_override else color_override
+    color = CHARACTER_COLOR if not color_override else color_override
     if not character.position:
         return
     

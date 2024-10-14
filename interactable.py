@@ -26,10 +26,6 @@ class Interactable(ABC):
     def position(self) -> Optional[Vector]:
         return self._position
 
-    #def is_hover(self, mouse_position: Vector ) -> bool:
-    #    if not self.position: return False
-    #    return self.detect_hover(self.position, self.size, mouse_position)
-
     def refresh(self, mouse_position: Vector, detect_hover: Callable[[Vector, Vector, Vector], bool]) -> None:
         if not self.position: return
 
