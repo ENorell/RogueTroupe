@@ -33,18 +33,13 @@ class CommandlineEngine(Engine):
         print("Exiting...")
 
 
-if __name__ == "__main__": 
-    from interfaces import UserInput
+if __name__ == "__main__":
+    from game import NoGame
     from renderer import PygameRenderer
     from input_listener import PygameInputListener
-    
-    class MockGame:
-        def loop(self, user_input: UserInput) -> None:
-            pass
-
 
     engine = PygameEngine(
-        MockGame(),
+        NoGame(),
         PygameRenderer(), 
         PygameInputListener()
         )

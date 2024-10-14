@@ -2,6 +2,11 @@ from interfaces import Loopable, UserInput
 from character import Character, CharacterSlot
 
 
+class NoGame(Loopable):
+    def loop(self, user_input: UserInput) -> None:
+        pass
+
+
 class Game(Loopable):
 
     def __init__(self, characters: list[Character], character_slots: list[CharacterSlot]) -> None:
@@ -12,7 +17,3 @@ class Game(Loopable):
         
         pass
 
-
-class NoGame(Loopable):
-    def loop(self, user_input: UserInput) -> None:
-        pass

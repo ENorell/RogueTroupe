@@ -2,7 +2,7 @@ import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 
 from pygame import draw, Rect
-from interfaces import Loopable, UserInput
+from interfaces import UserInput
 
 from engine         import PygameEngine, CommandlineEngine
 from input_listener import DeafInputListener, PygameInputListener, KeyboardInputListener, CrazyInputListener
@@ -30,8 +30,8 @@ class MockCliRenderer(CommandlineRenderer):
 
 engine = CommandlineEngine(
     MockGame(),
-    MockCliRenderer(),
-    KeyboardInputListener() 
+    MockPgRenderer(),
+    CrazyInputListener() 
 )
 
 engine.run()

@@ -1,6 +1,11 @@
-from typing import Final
+from typing import Final, TypeAlias
+
+Vector: TypeAlias = tuple[int, int]
+Color: TypeAlias = tuple[int,int,int]
 
 GAME_NAME: Final[str] = "Rogue Troupe"
 GAME_FPS: Final[int] = 30
 DISPLAY_WIDTH:  Final[int] = 800
 DISPLAY_HEIGHT: Final[int] = 600
+
+COLOR_BLACK: Final[Color] = (0,0,0)

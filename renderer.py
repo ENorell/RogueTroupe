@@ -1,15 +1,10 @@
-from character import CharacterSlot, Character
-from pygame import Surface, draw, Rect, display
-from typing import Final, TypeAlias, Optional
+from pygame import display
+from typing import Final
 from interfaces import Renderer, Loopable
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
 
-from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
 
-Color: TypeAlias = tuple[int,int,int]
-
-DISPLAY_BACKGROUND_COLOR: Final[tuple] = (0, 27, 58)
-SLOT_COLOR: Final[Color] = (9, 97, 59)
-CHARACTER_COLOR: Final[Color] = (100, 50 ,230)
+COLOR_DISPLAY_BACKGROUND: Final[Color] = (0, 27, 58)
 
 
 class NoRenderer(Renderer):
@@ -25,7 +20,7 @@ class PygameRenderer(Renderer):
 
     def render(self, loopable: Loopable) -> None:
 
-        self.frame.fill(DISPLAY_BACKGROUND_COLOR)
+        self.frame.fill(COLOR_DISPLAY_BACKGROUND)
 
         self.draw_frame(loopable)
         
@@ -43,21 +38,3 @@ class CommandlineRenderer(Renderer):
         print(self.ascii_graphic, end='\r')
 
 
-def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
-    assert character_slot.position is not None
-
-    rect = Rect(character_slot.position, character_slot.size)
-    draw.ellipse(frame, SLOT_COLOR, rect)
-
-
-def draw_character(frame: Surface, character: Character, color_override: Optional[Color] = None):
-    color = CHARACTER_COLOR if not color_override else color_override
-    if not character.position:
-        return
-
-    rect = Rect(character.position, character.size)
-
-    #if character.is_hover():
-    #    rect.scale_by(1.5, 1.5)
-
-    draw.rect(frame, color, rect)

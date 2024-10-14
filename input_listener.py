@@ -45,7 +45,7 @@ class PygameInputListener(InputListener):
 
 class DeafInputListener(InputListener):
     """
-    Produces no user for a number of frames, then quits
+    Produces no input for a number of frames, then quits
     """
     def __init__(self) -> None:
         self.frame_counter = 0
@@ -82,6 +82,9 @@ class CrazyInputListener(InputListener):
 
 
 class KeyboardInputListener(InputListener):
+    """
+    Listens to keyboard presses using the Keyboard module.
+    """
 
     def capture(self) -> UserInput:
 

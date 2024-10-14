@@ -1,4 +1,6 @@
-from renderer import PygameRenderer, draw_slot, draw_character
+from renderer import PygameRenderer
+from character import draw_character
+from character_slot import draw_slot
 from game import Game
 
 

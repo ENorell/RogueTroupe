@@ -1,45 +1,11 @@
-from abc import ABC
-from typing import Optional, TypeAlias, Callable
+from typing import Optional, Final
+from interactable import Interactable
+from settings import Vector, Color
+from character_slot import CharacterSlot
+from pygame import Surface, Rect, draw, Vector2
 
 
-Vector: TypeAlias = tuple[int, int]
-
-
-def detect_hover_pygame(position: Vector, size: Vector, mouse_position: Vector) -> bool:
-    from pygame import Rect
-    rectangle = Rect(position, size)
-    return rectangle.collidepoint( mouse_position )
-
-
-class Interactable(ABC):
-    width_pixels: int
-    height_pixels: int
-    detect_hover: Callable[[Vector, Vector, Vector], bool] = detect_hover_pygame
-
-    def __init__(self) -> None:
-        self._position: Optional[Vector]
-
-    @property
-    def size(self) -> Vector:
-        return (self.width_pixels, self.height_pixels)
-
-    @property
-    def position(self) -> Optional[Vector]:
-        return self._position
-
-    def is_hover(self, mouse_position: Vector ) -> bool:
-        if not self.position: return False
-        return self.detect_hover(self.position, self.size, mouse_position)
-    
-
-
-class CharacterSlot(Interactable):
-    width_pixels: int = 75
-    height_pixels: int = 50
-    
-    def __init__(self, position: Vector) -> None:
-        self._position = position
-
+COLOR_CHARACTER: Final[Color] = (100, 50 ,230)
 
 
 class Character(Interactable):
@@ -62,23 +28,23 @@ class Character(Interactable):
 
 
 
-if __name__ == "__main__":
-    from interfaces import UserInput
-    from engine import PygameEngine
-    from renderer import PygameRenderer
-    from input_listener import PygameInputListener
+def draw_character(frame: Surface, character: Character, color_override: Optional[Color] = None):
+    color = COLOR_CHARACTER if not color_override else color_override
+    if not character.position:
+        return
     
-    class MockGame:
-        def __init__(self) -> None:
-            self.character = Character()
+    assert character.character_slot
+    assert character.character_slot.position
 
-        def loop(self, user_input: UserInput) -> None:
-            pass
+    slot_center = Rect(character.character_slot.position, character.character_slot.size).center
 
-    engine = PygameEngine(
-        MockGame(),
-        PygameRenderer(), 
-        PygameInputListener()
-        )
+    character_bottom = Rect(character.position, character.size).midbottom
 
-    engine.run()
+    alignment = Vector2(slot_center) - Vector2(character_bottom)
+
+    rect = Rect(Vector2(character.position) + alignment, character.size)
+
+    if character.is_hovered:
+        rect = rect.scale_by(1.5, 1.5)
+
+    draw.rect(frame, color, rect)
