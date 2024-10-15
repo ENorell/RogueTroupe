@@ -1,5 +1,6 @@
 from interfaces import Loopable, UserInput
-from character import Character, CharacterSlot
+from character import Character
+from character_slot import CharacterSlot
 
 
 class NoGame(Loopable):

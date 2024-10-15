@@ -12,7 +12,8 @@ class GameRenderer(PygameRenderer):
 
         for character in game.characters:
             #if character.is_hover()
-            draw_character(self.frame, character)
+            #draw_character(self.frame, character)
+            pass
 
 
 if __name__ == '__main__':

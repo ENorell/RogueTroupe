@@ -4,17 +4,17 @@ from settings import Vector
 from pygame import Rect
 
 
-class Collider(Protocol):
+class MouseCollider(Protocol):
     
     def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
         ...
 
-class NoCollider:
+class NoMouseCollider:
 
     def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
         return False
     
-class PygameCollider:
+class PygameMouseCollider:
 
     def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
         rectangle = Rect(top_left, size)
@@ -26,29 +26,44 @@ def detect_hover_pygame(position: Vector, size: Vector, mouse_position: Vector) 
     return rectangle.collidepoint( mouse_position )
 
 
+def detect_hover_box(top_left: Vector, size: Vector, mouse_position: Vector) -> bool:
+    width, height = size
+    top_left_x, top_left_y = top_left
+    mouse_x, mouse_y = mouse_position
+    is_mouse_in_box_x = top_left_x <= mouse_x <= top_left_x + width
+    is_mouse_in_box_y = top_left_y <= mouse_y <= top_left_y + height
+    return is_mouse_in_box_x and is_mouse_in_box_y
+
+
 class Interactable(ABC):
     width_pixels: int
     height_pixels: int
-    #detect_hover: Callable[[Vector, Vector, Vector], bool] = detect_hover_pygame
-    _is_hovered: bool = False
 
-    def __init__(self) -> None:
-        self._position: Optional[Vector]
+    def __init__(self, position: Vector) -> None:
+        self._position = position
+        self._is_hovered: bool = False
 
     @property
     def size(self) -> Vector:
         return (self.width_pixels, self.height_pixels)
 
     @property
-    def position(self) -> Optional[Vector]:
+    def position(self) -> Vector:
         return self._position
 
-    def refresh(self, mouse_position: Vector, detect_hover: Callable[[Vector, Vector, Vector], bool]) -> None:
-        if not self.position: return
-
-        self._is_hovered = detect_hover(self.position, self.size, mouse_position)
+    def refresh(self, mouse_position: Vector) -> None:
+        self._is_hovered = detect_hover_box(self.position, self.size, mouse_position)
 
     @property
     def is_hovered(self) -> bool:
         return self._is_hovered
     
+    @property
+    def bottom_mid_coordinate(self) -> Vector:
+        x_position, y_position = self.position
+        return (x_position + round(self.width_pixels/2), y_position + self.height_pixels)
+    
+    @property
+    def center_coordinate(self) -> Vector:
+        x_position, y_position = self.position
+        return (x_position + round(self.width_pixels/2), y_position + round(self.height_pixels/2) )
