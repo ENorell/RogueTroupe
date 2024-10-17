@@ -5,7 +5,7 @@ from typing import Final, Optional
 from character import Character
 
 
-SLOT_COLOR: Final[Color] = (9, 97, 59)
+BATTLE_SLOT_COLOR: Final[Color] = (57, 122, 65)
 SLOT_HOVER_WIDTH: Final[int] = 3
 
 
@@ -14,9 +14,10 @@ class CharacterSlot(Interactable):
     height_pixels: int = 50
     _content: Optional[Character] = None
     
-    def __init__(self, position: Vector) -> None:
+    def __init__(self, position: Vector, color: Color) -> None:
         super().__init__(position)
         self._position = position
+        self.color = color
 
     @property
     def content(self):
@@ -27,11 +28,11 @@ class CharacterSlot(Interactable):
         self._content = character
 
 
-def draw_slot(frame: Surface, character_slot: CharacterSlot, color: Color = SLOT_COLOR) -> None:
+def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
     assert character_slot.position is not None
 
     rect = Rect(character_slot.position, character_slot.size)
-    draw.ellipse(frame, color, rect)
+    draw.ellipse(frame, character_slot.color, rect)
 
     if character_slot.is_hovered:
         draw.ellipse(frame, BLACK_COLOR, rect, width=SLOT_HOVER_WIDTH)
