@@ -1,7 +1,7 @@
 from typing import Optional, Final
-from settings import Vector, Color, BLACK_COLOR, DEFAULT_TEXT_SIZE
-from pygame import Surface, Rect, draw, font
-
+from settings import Vector, Color
+from pygame import Surface, Rect, draw
+from interactable import draw_text
 
 CHARACTER_COLOR: Final[Color] = (100, 50 ,230)
 
@@ -55,17 +55,6 @@ class TrollCharacter(Character):
     max_health: int = 9
     damage: int = 3
 
-
-
-def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
-    font_size: int = round(DEFAULT_TEXT_SIZE * scale_ratio)
-    text_font = font.SysFont(name = "comicsans", size = font_size)
-    text = text_font.render(text_content, 1, BLACK_COLOR)
-    (text_size_x, text_size_y) = text.get_size()
-    (center_x, center_y) = center_position
-    text_topleft_position = (center_x - text_size_x / 2, center_y - text_size_y)
-
-    window.blit(text, text_topleft_position)
 
 
 def draw_character(frame: Surface, mid_bottom: Vector, character: Character, color_override: Optional[Color] = None, scale_ratio: float = 1):
