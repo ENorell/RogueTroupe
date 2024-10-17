@@ -6,15 +6,46 @@ from input_listener import DeafInputListener, PygameInputListener
 from engine import PygameEngine
 from renderer import PygameRenderer
 
-from character import Character, KnightCharacter, WizardCharacter, draw_character, draw_text
+from character import Character, KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter, draw_character, draw_text
 from character_slot import CharacterSlot, draw_slot
-from typing import Optional
+from typing import Optional, Final
+from settings import Vector
 
+from random import choice
+
+
+CHARACTER_POOL: list[Character] = [
+    KnightCharacter(),
+    WizardCharacter(),
+    GoblinCharacter(),
+    TrollCharacter()
+]
+
+SHOP_TOP_LEFT_POSITION: Final[Vector] = (175,100)
+SHOP_SLOT_NR_ROWS: Final[int] = 2
+SHOP_SLOT_NR_COLS: Final[int] = 4
+SHOP_SLOT_DISTANCE: Final[int] = 50
+
+
+def create_shop_slots() -> list[CharacterSlot]:
+    top_left_x, top_left_y = SHOP_TOP_LEFT_POSITION
+    slots: list[CharacterSlot] = []
+    for row in range(SHOP_SLOT_NR_ROWS):
+        for col in range(SHOP_SLOT_NR_COLS):
+            x_position = top_left_x + col * (CharacterSlot.width_pixels  + SHOP_SLOT_DISTANCE)
+            y_position = top_left_y + row * (CharacterSlot.height_pixels + SHOP_SLOT_DISTANCE)
+            slot = CharacterSlot((x_position,y_position))
+            slot.content = choice(CHARACTER_POOL)
+            slots.append(slot)
+    
+    return slots
 
 
 class MockGame(Loopable):
     def __init__(self) -> None:
         self.detached_slot: Optional[CharacterSlot] = None
+
+        self.shop_slots: list[CharacterSlot] = create_shop_slots()
 
         self.slots = [
             CharacterSlot((25 ,400)),
@@ -24,19 +55,16 @@ class MockGame(Loopable):
             ]
         
         self.bench_slots = [
-            CharacterSlot((25 ,150)),
-            CharacterSlot((125,150))
+            CharacterSlot((500,400)),
+            CharacterSlot((600,400))
         ]
-
-        self.slots[2].content = KnightCharacter()
-        self.slots[3].content = WizardCharacter()
 
 
     def loop(self, user_input: UserInput) -> None:
         self.user_input = user_input
 
         hover_slot: Optional[CharacterSlot] = None
-        for slot in self.slots + self.bench_slots: 
+        for slot in self.slots + self.bench_slots + self.shop_slots: 
             slot.refresh(user_input.mouse_position)
 
             if slot.is_hovered:
@@ -51,8 +79,7 @@ class MockGame(Loopable):
             hover_content = hover_slot.content
             detached_content = self.detached_slot.content
             assert detached_content
-            #if not detached_content:
-            #    raise Exception("ops")
+
             self.detached_slot.content = hover_content
             hover_slot.content = detached_content
             self.detached_slot = None
@@ -66,14 +93,22 @@ class MockGame(Loopable):
 
 class MockRenderer(PygameRenderer):
     def draw_frame(self, loopable: MockGame):
-        draw_text(str(bool(loopable.detached_slot)), self.frame, (600,150))
-        if loopable.detached_slot: 
-            if loopable.detached_slot.content:
-                draw_text(loopable.detached_slot.content.name, self.frame, (600,100))
+        #draw_text(str(bool(loopable.detached_slot)), self.frame, (600,150))
+        #if loopable.detached_slot: 
+        #    if loopable.detached_slot.content:
+        #        draw_text(loopable.detached_slot.content.name, self.frame, (600,100))
                 
 
-        for slot in loopable.slots + loopable.bench_slots:
-            draw_slot(self.frame, slot)
+        for slot in loopable.slots + loopable.bench_slots + loopable.shop_slots:
+            
+            if slot in loopable.shop_slots:
+                color = (119, 64, 36)
+            elif slot in loopable.bench_slots:
+                color = (54, 68, 90)
+            else:
+                color = (57, 122, 65)
+            
+            draw_slot(self.frame, slot, color)
             
             if not slot.content: continue
 

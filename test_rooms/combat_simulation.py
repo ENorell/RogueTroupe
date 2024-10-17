@@ -188,7 +188,7 @@ class MockRenderer(PygameRenderer):
             
             if not slot.content: continue
 
-            is_acting = loopable.current_round.current_turn.character == slot.content
+            is_acting = loopable.current_round.current_turn.character == slot.content and loopable.is_combat
 
             scale_ratio = 1.5 if slot.is_hovered or is_acting else 1
 

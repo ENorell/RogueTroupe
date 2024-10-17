@@ -27,11 +27,11 @@ class CharacterSlot(Interactable):
         self._content = character
 
 
-def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
+def draw_slot(frame: Surface, character_slot: CharacterSlot, color: Color = SLOT_COLOR) -> None:
     assert character_slot.position is not None
 
     rect = Rect(character_slot.position, character_slot.size)
-    draw.ellipse(frame, SLOT_COLOR, rect)
+    draw.ellipse(frame, color, rect)
 
     if character_slot.is_hovered:
         draw.ellipse(frame, BLACK_COLOR, rect, width=SLOT_HOVER_WIDTH)
