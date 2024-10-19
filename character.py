@@ -27,43 +27,6 @@ class Character:
     def is_dead(self) -> bool:
         return self.health == 0
 
-class KnightCharacter(Character):
-    name: str = "Knight"
-    max_health: int = 7
-    damage: int = 1
-    range: int = 1  # Melee range
-    ability_name: Optional[str] = "shield"
-    trigger: Optional[str] = "damaged"
-    image_path: str = "assets/characters/crest-transformed.webp"
-
-
-class WizardCharacter(Character):
-    name: str = "Wizard"
-    max_health: int = 3
-    damage: int = 3
-    range: int = 3  # Ranged attack
-    ability_name: Optional[str] = "blast"
-    trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/velo-transformed.webp"
-
-
-class GoblinCharacter(Character):
-    name: str = "Goblin"
-    max_health: int = 4
-    damage: int = 1
-    range: int = 1  # Melee range
-    image_path: str = "assets/characters/ptero-transformed.webp"
-
-
-class TrollCharacter(Character):
-    name: str = "Troll"
-    max_health: int = 9
-    damage: int = 3
-    range: int = 1  # Melee range
-    image_path: str = "assets/characters/crest-transformed.webp"
-
-
-# New Characters
 class Archeryptrx(Character):
     #A simple archer with upfront damage and range
     name: str = "Archeryptrx"

@@ -1,5 +1,5 @@
 from state_machine import State, StateChoice
-from character import Character, KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter
+from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue
 from character_slot import CharacterSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
@@ -10,10 +10,12 @@ from settings import Vector, Color
 
 
 SHOP_POOL: list[type] = [
-    KnightCharacter,
-    WizardCharacter,
-    GoblinCharacter,
-    TrollCharacter
+    Tankylosaurus,
+    Macedon,
+    Healamimus,
+    Dilophmageras,
+    Tripiketops,
+    Velocirougue
 ]
 
 SHOP_TOP_LEFT_POSITION: Final[Vector] = (150,100)

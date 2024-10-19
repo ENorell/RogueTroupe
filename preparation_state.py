@@ -1,16 +1,16 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
-from character import Character, KnightCharacter, WizardCharacter, TrollCharacter, GoblinCharacter, draw_character
+from character import Character, Character, draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
 from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
 
 
 ENEMY_POOL: list[type] = [
-    KnightCharacter,
-    WizardCharacter,
-    GoblinCharacter,
-    TrollCharacter
+    Spinoswordaus,
+    Stabiraptor,
+    Pterapike,
+    Ateratops
 ]
 
 
