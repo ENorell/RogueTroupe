@@ -10,8 +10,8 @@ from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
 
 
 BACKGROUND_IMAGE_PATHS: Final[dict] = {
-    'SHOP': 'assets/backgrounds/jungle.webp',
-    'PREPARATION': 'assets/backgrounds/jungle2.webp',
+    'SHOP': 'assets/backgrounds/shop_jungle.webp',
+    'PREPARATION': 'assets/backgrounds/combat_jungle.webp', #Will this just be same as combat?
     'COMBAT': 'assets/backgrounds/combat_jungle.webp'
 }
 
