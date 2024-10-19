@@ -24,7 +24,7 @@ class PreparationState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
-        generate_characters(self.enemy_slots, ENEMY_POOL)
+        generate_characters(self.enemy_slots, ENEMY_POOL, True)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:

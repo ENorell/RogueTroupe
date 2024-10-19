@@ -12,7 +12,7 @@ from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
 BACKGROUND_IMAGE_PATHS: Final[dict] = {
     'SHOP': 'assets/backgrounds/jungle.webp',
     'PREPARATION': 'assets/backgrounds/jungle2.webp',
-    'COMBAT': 'assets/backgrounds/jungle3.webp'
+    'COMBAT': 'assets/backgrounds/combat_jungle.webp'
 }
 
 class NoRenderer(Renderer):
