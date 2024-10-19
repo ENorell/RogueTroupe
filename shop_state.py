@@ -1,20 +1,19 @@
 from state_machine import State, StateChoice
 from character import Character, KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter
-from character_slot import CharacterSlot
+from character_slot import CharacterSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
 from interactable import Button, draw_button
 from typing import Final
-from random import choice
 
 from settings import Vector, Color
 
 
-CHARACTER_POOL: list[Character] = [
-    KnightCharacter(),
-    WizardCharacter(),
-    GoblinCharacter(),
-    TrollCharacter()
+SHOP_POOL: list[type] = [
+    KnightCharacter,
+    WizardCharacter,
+    GoblinCharacter,
+    TrollCharacter
 ]
 
 SHOP_TOP_LEFT_POSITION: Final[Vector] = (150,100)
@@ -38,11 +37,6 @@ def create_shop_slots() -> list[CharacterSlot]:
     return slots
 
 
-def generate_shop_content(slots: list[CharacterSlot]) -> None:
-    for slot in slots:
-        slot.content = choice(CHARACTER_POOL)
-
-
 class ShopState(State):
     def __init__(self, ally_slots: list[CharacterSlot], bench_slots: list[CharacterSlot]) -> None:
         super().__init__()
@@ -54,7 +48,7 @@ class ShopState(State):
 
 
     def start_state(self) -> None:
-        generate_shop_content(self.shop_slots)
+        generate_characters(self.shop_slots, SHOP_POOL)
 
 
     def loop(self, user_input: UserInput) -> None:
@@ -71,5 +65,3 @@ class ShopRenderer(DragDropRenderer):
         super().draw_frame(shop.drag_dropper)
 
         draw_button(self.frame, shop.start_combat_button)
-
-

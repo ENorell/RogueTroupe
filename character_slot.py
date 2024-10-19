@@ -3,6 +3,7 @@ from settings import Color, Vector, BLACK_COLOR
 from pygame import Surface, Rect, draw
 from typing import Final, Optional
 from character import Character
+from random import choice
 
 
 BATTLE_SLOT_COLOR: Final[Color] = (57, 122, 65)
@@ -26,6 +27,12 @@ class CharacterSlot(Interactable):
     @content.setter
     def content(self, character: Optional[Character]):
         self._content = character
+
+
+def generate_characters(slots: list[CharacterSlot], character_type_pool: list[type]) -> None:
+    for slot in slots:
+        character_type = choice(character_type_pool)
+        slot.content = character_type()
 
 
 def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:

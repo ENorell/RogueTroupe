@@ -56,7 +56,7 @@ class DragDropRenderer(PygameRenderer):
         for slot in drag_dropper.slots:
             draw_slot(self.frame, slot)
         
-        #make sure the characters are drawn on top
+        #make sure the characters are drawn on top of slots
         for slot in drag_dropper.slots:
             if not slot.content: continue
 

@@ -38,8 +38,8 @@ preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
 preparation_state.start_state()
 
 engine = PygameEngine(
-    preparation_state,
-    PreparationRenderer(),
+    shop_state,
+    ShopRenderer(),
     PygameInputListener()
 )
 
