@@ -1,26 +1,9 @@
 from abc import ABC
-from typing import Protocol, Final
+from typing import Final
 from settings import Vector, Color, BLACK_COLOR, DEFAULT_TEXT_SIZE
 from pygame import Rect, draw, Surface, font
 
 BUTTON_COLOR: Final[Color] = (9, 97, 59)
-
-
-class MouseCollider(Protocol):
-    
-    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
-        ...
-
-class NoMouseCollider:
-
-    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
-        return False
-    
-class PygameMouseCollider:
-
-    def is_point_contained(self, point: Vector, top_left: Vector, size: Vector) -> bool:
-        rectangle = Rect(top_left, size)
-        return rectangle.collidepoint( point )
 
 
 def detect_hover_pygame(position: Vector, size: Vector, mouse_position: Vector) -> bool:

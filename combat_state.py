@@ -1,9 +1,11 @@
 from interfaces import UserInput
-from character import Character, draw_character, draw_text
+from character import Character, draw_character
 from character_slot import CharacterSlot, draw_slot
 from settings import GAME_FPS
 from state_machine import State, StateChoice
-from interactable import Button
+from interactable import Button, draw_button, draw_text
+from renderer import PygameRenderer
+from typing import Optional
 
 class BattlePhase: #not used now, but might be necessary later if there are several components to a turn
     
@@ -27,7 +29,6 @@ class Delay:
 
 class BattleTurn:
     def __init__(self, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
-        #self.phases = phases
         self.character = character
         self.is_done = False
         self.delay = Delay(0.5)
@@ -36,7 +37,8 @@ class BattleTurn:
 
     def determine_target(self) -> None:
         relative_enemies: list[CharacterSlot] = self.ally_slots if self.character in [slot.content for slot in self.enemy_slots] else self.enemy_slots
-        self.target_character: Character = [slot.content for slot in relative_enemies if slot.content and not slot.content.is_dead()][0]
+        living_enemies = [slot.content for slot in relative_enemies if slot.content and not slot.content.is_dead()]
+        self.target_character: Optional[Character] = living_enemies[0] if living_enemies else None
 
     def start_turn(self) -> None:
         if self.character.is_dead():
@@ -50,7 +52,8 @@ class BattleTurn:
             self.delay.tick()
             return
         
-        self.target_character.damage_health(self.character.damage)
+        if self.target_character:
+            self.target_character.damage_health(self.character.damage)
         self.is_done = True
 
 
@@ -59,27 +62,20 @@ class BattleRound:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.turn_order = self.get_turn_order()
-        self.current_turn: BattleTurn = self.turn_order[0]
-        self.current_turn.start_turn()
         self.is_done = False
 
 
     def get_turn_order(self) -> list[BattleTurn]:
-        characters: list[Character] = []
-        for slot in self.ally_slots+self.enemy_slots:
-            if not slot.content or slot.content.is_dead():
-                continue
-            characters.append(slot.content)
-
-        return [BattleTurn(character, self.ally_slots, self.enemy_slots) for character in characters]
-        
+        living_characters = [slot.content for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead()]
+        return [BattleTurn(character, self.ally_slots, self.enemy_slots) for character in living_characters]
 
     def start_round(self) -> None:
-        pass
+        self.current_turn: BattleTurn = self.turn_order[0]
+        self.current_turn.start_turn()
 
     def next_round(self) -> None:
         self.turn_order.remove(self.current_turn)
-        if len(self.turn_order) == 0:
+        if not self.turn_order:
             self.is_done = True
             return
         
@@ -98,6 +94,12 @@ def is_everyone_dead(slots: list[CharacterSlot]):
     characters_alive: list[Character] = [slot.content for slot in slots if slot.content and not slot.content.is_dead() ]
     return not bool( characters_alive )
 
+def revive_ally_characters(slots: list[CharacterSlot]) -> None:
+    for slot in slots:
+        if not slot.content:
+            return
+        
+        slot.content.revive()
 
 
 class CombatState(State):
@@ -108,10 +110,15 @@ class CombatState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
+        self.start_new_round()
+
+    def start_new_round(self) -> None:
         self.current_round = BattleRound(self.ally_slots, self.enemy_slots)
         self.current_round.start_round()
 
-
+    def is_combat_concluded(self) -> bool:
+        return is_everyone_dead(self.ally_slots) or is_everyone_dead(self.enemy_slots)
+    
     def loop(self, user_input: UserInput) -> None:
         self.continue_button.refresh(user_input.mouse_position)
 
@@ -119,11 +126,28 @@ class CombatState(State):
             self.current_round.loop()
             return
 
-        if is_everyone_dead(self.ally_slots):
+        if self.is_combat_concluded():
             if self.continue_button.is_hovered and user_input.is_mouse1_up:
-                self.next_state = StateChoice.SHOP
-        elif is_everyone_dead(self.enemy_slots):
-            if self.continue_button.is_hovered and user_input.is_mouse1_up:
+                revive_ally_characters(self.ally_slots)
                 self.next_state = StateChoice.SHOP
         else:
-            self.start_state()
+            self.start_new_round()
+
+
+class CombatRenderer(PygameRenderer):
+    def draw_frame(self, combat_state: CombatState):
+        if combat_state.is_combat_concluded():
+            draw_button(self.frame, combat_state.continue_button )
+            conclusion_text = "You lost..." if is_everyone_dead(combat_state.ally_slots) else "You won!"
+            draw_text(conclusion_text, self.frame, (400,400))
+                        
+        for slot in combat_state.ally_slots + combat_state.enemy_slots:
+            draw_slot(self.frame, slot)
+            
+            if not slot.content: continue
+
+            is_acting = combat_state.current_round.current_turn.character == slot.content and not combat_state.current_round.current_turn.character.is_dead()
+
+            scale_ratio = 1.5 if slot.is_hovered or is_acting else 1
+
+            draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)

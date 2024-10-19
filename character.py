@@ -22,6 +22,9 @@ class Character:
 
     def is_dead(self) -> bool:
         return self.health == 0
+    
+    def revive(self) -> None:
+        self.health = self.max_health
 
 
 class KnightCharacter(Character):

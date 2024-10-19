@@ -1,24 +1,17 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
 from character import Character, KnightCharacter, WizardCharacter, TrollCharacter, GoblinCharacter, draw_character
-from character_slot import CharacterSlot, draw_slot
+from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
 
-from random import choice
 
-
-ENEMY_POOL: list[Character] = [
-    KnightCharacter(),
-    WizardCharacter(),
-    GoblinCharacter(),
-    TrollCharacter()
+ENEMY_POOL: list[type] = [
+    KnightCharacter,
+    WizardCharacter,
+    GoblinCharacter,
+    TrollCharacter
 ]
-
-
-def generate_enemies(slots: list[CharacterSlot]) -> None:
-    for slot in slots:
-        slot.content = choice(ENEMY_POOL)
 
 
 class PreparationState(State):
@@ -31,7 +24,7 @@ class PreparationState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
-        generate_enemies(self.enemy_slots)
+        generate_characters(self.enemy_slots, ENEMY_POOL)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:

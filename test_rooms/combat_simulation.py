@@ -1,11 +1,9 @@
 import os, sys
 sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 
-from interfaces import UserInput
 from input_listener import PygameInputListener
 from engine import PygameEngine
 from renderer import PygameRenderer
-from game_renderer import GameRenderer
 
 from character import KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter, Character, draw_character, draw_text
 from character_slot import CharacterSlot, draw_slot
@@ -13,7 +11,7 @@ from interactable import Button, draw_button
 from combat_state import CombatState
 from preparation_state import PreparationState
 from shop_state import ShopState, ShopRenderer
-from game import create_ally_slots, create_enemy_slots, create_bench_slots
+from game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
 
 from state_machine import StateMachine, State, StateChoice
 
@@ -89,7 +87,7 @@ states: dict[StateChoice, State] = {
     }
 
 
-state_machine = StateMachine(states, StateChoice.BATTLE)
+state_machine = StateMachine(states, StateChoice.PREPARATION)
 
 
 engine = PygameEngine(

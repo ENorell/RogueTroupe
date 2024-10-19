@@ -1,9 +1,10 @@
 from interfaces import Loopable, UserInput
+from renderer import PygameRenderer
 from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
 from state_machine import StateMachine, State, StateChoice
-from combat_state import CombatState
-from preparation_state import PreparationState
-from shop_state import ShopState
+from combat_state import CombatState, CombatRenderer
+from preparation_state import PreparationState, PreparationRenderer
+from shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
 
 from typing import Final
 from settings import DISPLAY_WIDTH
@@ -44,7 +45,7 @@ def create_bench_slots() -> list[CharacterSlot]:
     first_slot_position = SCREEN_CENTER - DISTANCE_CENTER_TO_SLOTS - round( CharacterSlot.width_pixels/2 )
     for slot_nr in range(NR_BENCH_SLOTS_PER_TEAM):
         position_x = first_slot_position - slot_nr * ( DISTANCE_BETWEEN_SLOTS + CharacterSlot.width_pixels) 
-        slots.append( CharacterSlot((position_x, BENCH_HEIGHT), BATTLE_SLOT_COLOR) )
+        slots.append( CharacterSlot((position_x, BENCH_HEIGHT), BENCH_SLOT_COLOR) )
     return slots
 
 
@@ -68,3 +69,24 @@ class Game(StateMachine):
 
         super().__init__(states, start_state=StateChoice.SHOP)
 
+
+class GameRenderer(PygameRenderer):
+    def __init__(self) -> None:
+        super().__init__()
+        self.shop_renderer = ShopRenderer()
+        self.prepatation_renderer = PreparationRenderer()
+        self.combat_renderer = CombatRenderer()
+
+    def draw_frame(self, game: Game):
+        match game.state:
+            case CombatState():
+                self.combat_renderer.draw_frame(game.state)
+
+            case PreparationState():
+                self.prepatation_renderer.draw_frame(game.state)
+
+            case ShopState():
+                self.shop_renderer.draw_frame(game.state)
+
+            case _:
+                raise Exception(f"Unknown state to render: {game.state}")
