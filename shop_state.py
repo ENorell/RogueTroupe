@@ -62,7 +62,7 @@ class ShopState(State):
 
         self.start_combat_button.refresh(user_input.mouse_position)
         if self.start_combat_button.is_hovered and user_input.is_mouse1_up:
-            self.next_state = StateChoice.BATTLE
+            self.next_state = StateChoice.PREPARATION
 
 
 class ShopRenderer(DragDropRenderer):

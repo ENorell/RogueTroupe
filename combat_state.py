@@ -26,7 +26,7 @@ class Delay:
 
 
 class BattleTurn:
-    def __init__(self, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:#, phases: list[BattlePhase]) -> None:
+    def __init__(self, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
         #self.phases = phases
         self.character = character
         self.is_done = False
@@ -55,7 +55,7 @@ class BattleTurn:
 
 
 class BattleRound:
-    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot] ) -> None:#, turn_order: list[BattleTurn]) -> None:
+    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot] ) -> None:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.turn_order = self.get_turn_order()
@@ -102,6 +102,7 @@ def is_everyone_dead(slots: list[CharacterSlot]):
 
 class CombatState(State):
     def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
+        super().__init__()
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400,500), "Continue...")
@@ -112,6 +113,7 @@ class CombatState(State):
 
 
     def loop(self, user_input: UserInput) -> None:
+        self.continue_button.refresh(user_input.mouse_position)
 
         if not self.current_round.is_done:
             self.current_round.loop()
@@ -122,6 +124,6 @@ class CombatState(State):
                 self.next_state = StateChoice.SHOP
         elif is_everyone_dead(self.enemy_slots):
             if self.continue_button.is_hovered and user_input.is_mouse1_up:
-                self.next_state = StateChoice.PREPARATION
+                self.next_state = StateChoice.SHOP
         else:
             self.start_state()

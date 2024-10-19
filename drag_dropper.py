@@ -54,9 +54,10 @@ class DragDropRenderer(PygameRenderer):
     def draw_frame(self, drag_dropper: DragDropper):
 
         for slot in drag_dropper.slots:
-            
             draw_slot(self.frame, slot)
-            
+        
+        #make sure the characters are drawn on top
+        for slot in drag_dropper.slots:
             if not slot.content: continue
 
             position = drag_dropper.user_input.mouse_position if slot is drag_dropper.detached_slot else slot.center_coordinate
