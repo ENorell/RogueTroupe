@@ -5,7 +5,7 @@ from input_listener import DeafInputListener, PygameInputListener
 from engine import PygameEngine
 from shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
 from preparation_state import PreparationState, PreparationRenderer
-from character import WizardCharacter
+from character import Stabiraptor
 from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
 
 from logger import logging
@@ -31,7 +31,7 @@ enemy_slots = [
     CharacterSlot((725,400), BATTLE_SLOT_COLOR)
     ]
 
-ally_slots[0].content = WizardCharacter()
+ally_slots[0].content = Stabiraptor()
 
 
 shop_state = ShopState(ally_slots, bench_slots)

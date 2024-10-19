@@ -1,28 +1,33 @@
 from state_machine import State, StateChoice
-from character import Character, KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter
+from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
 from character_slot import CharacterSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
 from interactable import Button, draw_button
 from typing import Final
+from pygame import transform, image
 
-from settings import Vector, Color
+from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
 SHOP_POOL: list[type] = [
-    KnightCharacter,
-    WizardCharacter,
-    GoblinCharacter,
-    TrollCharacter
+    Tankylosaurus,
+    Macedon,
+    Healamimus,
+    Dilophmageras,
+    Tripiketops,
+    Velocirougue,
+    Archeryptrx
 ]
 
-SHOP_TOP_LEFT_POSITION: Final[Vector] = (150,100)
+SHOP_TOP_LEFT_POSITION: Final[Vector] = (170,180)
 SHOP_SLOT_NR_ROWS:  Final[int] = 2
 SHOP_SLOT_NR_COLS:  Final[int] = 4
-SHOP_SLOT_DISTANCE: Final[int] = 75
+SHOP_SLOT_DISTANCE_X: Final[int] = 60
+SHOP_SLOT_DISTANCE_Y: Final[int] = 80
 SHOP_SLOT_COLOR:    Final[Color] = (119, 64, 36)
 BENCH_SLOT_COLOR:   Final[Color] = (54, 68, 90)
-
+SHOP_BACKGROUND_IMAGE_PATH: Final[str] = 'assets/backgrounds/shop_jungle.webp'
 
 
 def create_shop_slots() -> list[CharacterSlot]:
@@ -30,8 +35,8 @@ def create_shop_slots() -> list[CharacterSlot]:
     slots: list[CharacterSlot] = []
     for row in range(SHOP_SLOT_NR_ROWS):
         for col in range(SHOP_SLOT_NR_COLS):
-            x_position = top_left_x + col * (CharacterSlot.width_pixels  + SHOP_SLOT_DISTANCE)
-            y_position = top_left_y + row * (CharacterSlot.height_pixels + SHOP_SLOT_DISTANCE)
+            x_position = top_left_x + col * (CharacterSlot.width_pixels  + SHOP_SLOT_DISTANCE_X)
+            y_position = top_left_y + row * (CharacterSlot.height_pixels + SHOP_SLOT_DISTANCE_Y)
             slot = CharacterSlot((x_position,y_position), SHOP_SLOT_COLOR)
             slots.append(slot)    
     return slots
@@ -60,8 +65,11 @@ class ShopState(State):
 
 
 class ShopRenderer(DragDropRenderer):
+    background_image = transform.scale(image.load(SHOP_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, shop: ShopState):
+        self.frame.blit(self.background_image, (0, 0))
+
         super().draw_frame(shop.drag_dropper)
 
         draw_button(self.frame, shop.start_combat_button)

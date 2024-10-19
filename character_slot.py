@@ -29,10 +29,10 @@ class CharacterSlot(Interactable):
         self._content = character
 
 
-def generate_characters(slots: list[CharacterSlot], character_type_pool: list[type]) -> None:
+def generate_characters(slots: list[CharacterSlot], character_type_pool: list[type], is_enemy: bool = False) -> None:
     for slot in slots:
         character_type = choice(character_type_pool)
-        slot.content = character_type()
+        slot.content = character_type(is_enemy=is_enemy)
 
 
 def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:

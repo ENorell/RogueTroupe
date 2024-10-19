@@ -1,18 +1,22 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
-from character import Character, KnightCharacter, WizardCharacter, TrollCharacter, GoblinCharacter, draw_character
+from character import Character, Character, draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
 from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
+from typing import Final
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
+from pygame import transform, image
 from logger import logging
 
 
-ENEMY_POOL: list[type] = [
-    KnightCharacter,
-    WizardCharacter,
-    GoblinCharacter,
-    TrollCharacter
+ENEMY_POOL: Final[list[type]] = [
+    Spinoswordaus,
+    Stabiraptor,
+    Pterapike,
+    Ateratops
 ]
+PREPARATION_BACKGROUND_IMAGE_PATH: Final[str] = 'assets/backgrounds/combat_jungle.webp'
 
 
 class PreparationState(State):
@@ -26,7 +30,8 @@ class PreparationState(State):
 
     def start_state(self) -> None:
         logging.info("Entering preparation phase")
-        generate_characters(self.enemy_slots, ENEMY_POOL)
+        generate_characters(self.enemy_slots, ENEMY_POOL, True)
+
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:
@@ -41,8 +46,11 @@ class PreparationState(State):
 
 
 class PreparationRenderer(DragDropRenderer):
+    background_image = transform.scale(image.load(PREPARATION_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, preparation_state: PreparationState):
+        self.frame.blit(self.background_image, (0, 0))
+
         super().draw_frame(preparation_state.drag_dropper)
 
         draw_button(self.frame, preparation_state.continue_button )
@@ -52,4 +60,4 @@ class PreparationRenderer(DragDropRenderer):
 
             scale_ratio = 1.5 if slot.is_hovered else 1
 
-            if slot.content:  draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)
+            if slot.content: draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)

@@ -1,10 +1,16 @@
-from pygame import display
+from pygame import display, time, Surface
 from typing import Final
 from interfaces import Renderer, Loopable
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
 
+from pygame import display, image, transform
+from typing import Final
+from interfaces import Renderer, Loopable
+from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
+from interactable import draw_text
 
-DISPLAY_BACKGROUND_COLOR: Final[Color] = (0, 27, 58)
+
+FPS_SCREEN_POSITION: Final[Vector] = (750,50)
 
 
 class NoRenderer(Renderer):
@@ -17,14 +23,17 @@ class PygameRenderer(Renderer):
     def __init__(self) -> None:
         self.frame = display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))
         display.set_caption(GAME_NAME)
+        self.fps_clock = time.Clock()  # Second clock with only purpose to record fps...
+
+    def draw_fps(self) -> None:
+        self.fps_clock.tick()
+        fps = round(self.fps_clock.get_fps())
+        draw_text(str(fps), self.frame, center_position=FPS_SCREEN_POSITION, scale_ratio=1.5)
 
     def render(self, loopable: Loopable) -> None:
-
-        self.frame.fill(DISPLAY_BACKGROUND_COLOR)
-
         self.draw_frame(loopable)
-        
-        display.flip()
+        self.draw_fps()
+        display.update()
 
     def draw_frame(self, loopable: Loopable):
         ...
