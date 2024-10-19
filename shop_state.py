@@ -1,5 +1,5 @@
 from state_machine import State, StateChoice
-from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue
+from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
 from character_slot import CharacterSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
@@ -15,7 +15,8 @@ SHOP_POOL: list[type] = [
     Healamimus,
     Dilophmageras,
     Tripiketops,
-    Velocirougue
+    Velocirougue,
+    Archeryptrx
 ]
 
 SHOP_TOP_LEFT_POSITION: Final[Vector] = (150,100)
