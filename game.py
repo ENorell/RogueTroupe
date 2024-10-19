@@ -14,6 +14,7 @@ NR_BENCH_SLOTS_PER_TEAM: Final[int] = 2
 DISTANCE_BETWEEN_SLOTS: Final[int] = 15
 DISTANCE_CENTER_TO_SLOTS: Final[int] = 75
 SLOT_HEIGHT: Final[int] = 400
+BENCH_HEIGHT: Final[int] = 500
 SCREEN_CENTER: Final[int] = round( DISPLAY_WIDTH/2 )
 
 
@@ -41,9 +42,9 @@ def create_enemy_slots() -> list[CharacterSlot]:
 def create_bench_slots() -> list[CharacterSlot]:
     slots = []
     first_slot_position = SCREEN_CENTER - DISTANCE_CENTER_TO_SLOTS - round( CharacterSlot.width_pixels/2 )
-    for slot_nr in range(NR_BATTLE_SLOTS_PER_TEAM):
+    for slot_nr in range(NR_BENCH_SLOTS_PER_TEAM):
         position_x = first_slot_position - slot_nr * ( DISTANCE_BETWEEN_SLOTS + CharacterSlot.width_pixels) 
-        slots.append( CharacterSlot((position_x, SLOT_HEIGHT), BATTLE_SLOT_COLOR) )
+        slots.append( CharacterSlot((position_x, BENCH_HEIGHT), BATTLE_SLOT_COLOR) )
     return slots
 
 
@@ -66,5 +67,4 @@ class Game(StateMachine):
             }
 
         super().__init__(states, start_state=StateChoice.SHOP)
-
 

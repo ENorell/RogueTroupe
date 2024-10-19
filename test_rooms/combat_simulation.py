@@ -5,6 +5,7 @@ from interfaces import UserInput
 from input_listener import PygameInputListener
 from engine import PygameEngine
 from renderer import PygameRenderer
+from game_renderer import GameRenderer
 
 from character import KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter, Character, draw_character, draw_text
 from character_slot import CharacterSlot, draw_slot
@@ -83,16 +84,17 @@ shop_state = ShopState(ally_slots, bench_slots)
 
 states: dict[StateChoice, State] = {
     StateChoice.SHOP: shop_state,
+    StateChoice.PREPARATION: preparation_state,
     StateChoice.BATTLE: combat_state
     }
 
 
-state_machine = StateMachine(states, StateChoice.SHOP)
+state_machine = StateMachine(states, StateChoice.BATTLE)
 
 
 engine = PygameEngine(
     state_machine,
-    MockRenderer2(),
+    GameRenderer(),
     PygameInputListener()
 )
 
