@@ -22,20 +22,20 @@ class Delay:
 
 
 class BattleTurn:
-    def __init__(self, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
+    def __init__(self, character: Character, character_index: int, attacker_slots: list[CharacterSlot], defender_slots: list[CharacterSlot], battle_log: list[str]) -> None:
         self.character = character
-        self.ally_slots = ally_slots
-        self.enemy_slots = enemy_slots
+        self.character_index = character_index  # Store the character index as an instance attribute
+        self.attacker_slots = attacker_slots
+        self.defender_slots = defender_slots
         self.battle_log = battle_log
         self.delay = Delay(0.5)
         self.is_done = False
         self.target_character: Optional[Character] = None
 
     def determine_target(self) -> None:
-        defenders = self.enemy_slots if self.character in [slot.content for slot in self.ally_slots] else self.ally_slots
-        for i in range(len(defenders) - 1, -1, -1):
-            defender_slot = defenders[i]
-            if defender_slot.content and not defender_slot.content.is_dead() and self.character.range >= i + 1:
+        for i in range(len(self.defender_slots) - 1, -1, -1):
+            defender_slot = self.defender_slots[i]
+            if defender_slot.content and not defender_slot.content.is_dead() and self.character.range >= i + self.character_index + 1:
                 self.target_character = defender_slot.content
                 self.target_character.is_defending = True
                 return
@@ -62,9 +62,15 @@ class BattleTurn:
 
 class BattleRound:
     def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
-        self.turn_order = [BattleTurn(slot.content, ally_slots, enemy_slots, battle_log) for slot in ally_slots + enemy_slots if slot.content and not slot.content.is_dead()]
+        self.battle_log = battle_log
+        ally_turns = [BattleTurn(slot.content, i, ally_slots, enemy_slots, self.battle_log) for i, slot in enumerate(ally_slots) if slot.content and not slot.content.is_dead()]
+        enemy_turns = [BattleTurn(slot.content, i, enemy_slots, ally_slots, self.battle_log) for i, slot in enumerate(enemy_slots) if slot.content and not slot.content.is_dead()]
+
+        self.turn_order = ally_turns + enemy_turns
         self.current_turn: Optional[BattleTurn] = None
         self.is_done = False
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
 
     def start_round(self) -> None:
         if self.turn_order:
@@ -72,13 +78,36 @@ class BattleRound:
             self.current_turn.start_turn()
         else:
             self.is_done = True
+            self.cleanup_dead_units()  # Clean up dead units at the end of the round
+            self.shift_units_forward()  # Shift units forward to fill empty slots
 
     def loop(self) -> None:
         if self.current_turn and self.current_turn.is_done:
             self.start_round()
         elif self.current_turn:
             self.current_turn.loop()
+    
+    def cleanup_dead_units(self) -> None:
+        """Remove dead characters from slots after a round."""
+        for slot in self.ally_slots + self.enemy_slots:
+            if slot.content and slot.content.is_dead():
+                character_name = slot.content.name  # Store the character's name before removing
+                self.battle_log.append(f"{character_name} has been removed from the battlefield due to being defeated.")
+                slot.content = None
 
+    def shift_units_forward(self) -> None:
+        """Move all units forward to fill empty slots after a round."""
+        for slots in [self.ally_slots, self.enemy_slots]:
+            # Collect all non-empty characters
+            non_empty_slots = [slot.content for slot in slots if slot.content is not None]
+            
+            # Set all slots to None initially
+            for slot in slots:
+                slot.content = None
+            
+            # Fill the slots with non-empty characters
+            for i, character in enumerate(non_empty_slots):
+                slots[i].content = character
 
 def revive_ally_characters(slots: list[CharacterSlot]) -> None:
     for slot in slots:
@@ -112,12 +141,13 @@ class CombatState(State):
     def loop(self, user_input: UserInput) -> None:
         self.continue_button.refresh(user_input.mouse_position)
 
-        if not self.current_round.is_done:
+        if self.is_combat_concluded():
+            if self.continue_button.is_hovered and user_input.is_mouse1_up:
+                revive_ally_characters(self.ally_slots)
+                self.next_state = StateChoice.SHOP
+        elif not self.current_round.is_done:
             self.current_round.loop()
-        elif self.is_combat_concluded() and self.continue_button.is_hovered and user_input.is_mouse1_up:
-            revive_ally_characters(self.ally_slots)
-            self.next_state = StateChoice.SHOP
-        elif self.current_round.is_done:
+        else:
             self.start_new_round()
 
 
