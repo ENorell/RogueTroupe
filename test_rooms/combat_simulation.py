@@ -15,6 +15,9 @@ from game import create_ally_slots, create_enemy_slots, create_bench_slots, Game
 
 from state_machine import StateMachine, State, StateChoice
 
+from logger import logging
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 ally_slots:  list[CharacterSlot] = create_ally_slots()
 enemy_slots: list[CharacterSlot] = create_enemy_slots()

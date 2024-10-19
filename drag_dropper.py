@@ -3,6 +3,7 @@ from character import draw_character
 from interfaces import UserInput
 from typing import Optional
 from renderer import PygameRenderer
+import logging
 
 
 class DragDropper:
@@ -24,6 +25,7 @@ class DragDropper:
 
         slot_a.content = slot_b_content
         slot_b.content = slot_a_content
+        logging.debug(f"Switch places between {slot_a_content} and {slot_b_content}")
         
     def loop(self, user_input: UserInput) -> None:
         self.user_input = user_input # Stored to be able to draw later...

@@ -7,7 +7,7 @@ from interactable import Button, draw_button, draw_text
 from renderer import PygameRenderer
 from typing import Optional
 from pygame import image, transform, font
-
+import logging
 
 COMBAT_BACKGROUND_IMAGE_PATH = 'assets/backgrounds/combat_jungle.webp'
 
@@ -46,7 +46,9 @@ class BattleTurn:
         self.target_character = None
 
     def start_turn(self) -> None:
+        logging.debug(f"Starting turn for {self.character.name}")
         if self.character.is_dead():
+            logging.debug(f"{self.character.name} is dead, skipping turn")
             self.is_done = True
             return
         self.determine_target()
@@ -55,10 +57,14 @@ class BattleTurn:
         if not self.target_character or self.delay.is_done:
             if self.target_character:
                 self.target_character.damage_health(self.character.damage)
-                self.battle_log.append(f"{self.character.name} attacks {self.target_character.name} for {self.character.damage} damage!")
+                log_message = f"{self.character.name} attacks {self.target_character.name} for {self.character.damage} damage!"
+                self.battle_log.append(log_message)
+                logging.debug(log_message)
                 self.target_character.is_defending = False
             else:
-                self.battle_log.append(f"{self.character.name} has no target to attack.")
+                log_message = f"{self.character.name} has no target to attack."
+                self.battle_log.append(log_message)
+                logging.debug(log_message)
             self.is_done = True
         else:
             self.delay.tick()
@@ -114,10 +120,11 @@ class BattleRound:
                 slots[i].content = character
 
 def revive_ally_characters(slots: list[CharacterSlot]) -> None:
+    logging.debug(f"Attempting to revive characters in {len(slots)} slots")
     for slot in slots:
         if slot.content:
             slot.content.revive()
-
+            logging.debug(f"Revived {slot.content.name}")
 
 def is_everyone_dead(slots: list[CharacterSlot]) -> bool:
     return all(slot.content is None or slot.content.is_dead() for slot in slots)
@@ -133,9 +140,13 @@ class CombatState(State):
         self.current_round: Optional[BattleRound] = None
 
     def start_state(self) -> None:
+        logging.info("Starting Combat")
+        self.round_counter = 0
         self.start_new_round()
-
+        
     def start_new_round(self) -> None:
+        self.round_counter += 1
+        logging.info(f"Starting Round {self.round_counter}")
         self.current_round = BattleRound(self.ally_slots, self.enemy_slots, self.battle_log)
         self.current_round.start_round()
 
@@ -147,6 +158,7 @@ class CombatState(State):
 
         if self.is_combat_concluded():
             if self.continue_button.is_hovered and user_input.is_mouse1_up:
+                logging.debug("Continue button clicked, switching states")
                 revive_ally_characters(self.ally_slots)
                 self.next_state = StateChoice.SHOP
         elif not self.current_round.is_done:
