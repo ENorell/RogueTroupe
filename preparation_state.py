@@ -1,16 +1,16 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
-from character import Character, KnightCharacter, WizardCharacter, TrollCharacter, GoblinCharacter, draw_character
+from character import Character, Character, draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
 from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
 
 
 ENEMY_POOL: list[type] = [
-    KnightCharacter,
-    WizardCharacter,
-    GoblinCharacter,
-    TrollCharacter
+    Spinoswordaus,
+    Stabiraptor,
+    Pterapike,
+    Ateratops
 ]
 
 
@@ -24,7 +24,7 @@ class PreparationState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
-        generate_characters(self.enemy_slots, ENEMY_POOL)
+        generate_characters(self.enemy_slots, ENEMY_POOL, True)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:

@@ -74,18 +74,22 @@ class GameRenderer(PygameRenderer):
     def __init__(self) -> None:
         super().__init__()
         self.shop_renderer = ShopRenderer()
-        self.prepatation_renderer = PreparationRenderer()
+        self.preparation_renderer = PreparationRenderer()
         self.combat_renderer = CombatRenderer()
 
     def draw_frame(self, game: Game):
+        # Set the appropriate background image based on the game state
         match game.state:
             case CombatState():
+                self.frame.blit(self.background_images['COMBAT'], (0, 0))
                 self.combat_renderer.draw_frame(game.state)
 
             case PreparationState():
-                self.prepatation_renderer.draw_frame(game.state)
+                self.frame.blit(self.background_images['PREPARATION'], (0, 0))
+                self.preparation_renderer.draw_frame(game.state)
 
             case ShopState():
+                self.frame.blit(self.background_images['SHOP'], (0, 0))
                 self.shop_renderer.draw_frame(game.state)
 
             case _:

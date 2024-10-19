@@ -5,7 +5,7 @@ from input_listener import PygameInputListener
 from engine import PygameEngine
 from renderer import PygameRenderer
 
-from character import KnightCharacter, WizardCharacter, GoblinCharacter, TrollCharacter, Character, draw_character, draw_text
+from character import *
 from character_slot import CharacterSlot, draw_slot
 from interactable import Button, draw_button
 from combat_state import CombatState
@@ -20,14 +20,14 @@ ally_slots:  list[CharacterSlot] = create_ally_slots()
 enemy_slots: list[CharacterSlot] = create_enemy_slots()
 bench_slots: list[CharacterSlot] = create_bench_slots()
 
-ally_slots[0].content = KnightCharacter()
-ally_slots[1].content = KnightCharacter()
-ally_slots[2].content = WizardCharacter()
-ally_slots[3].content = WizardCharacter()
-enemy_slots[0].content = GoblinCharacter()
-enemy_slots[1].content = GoblinCharacter()
-enemy_slots[2].content = GoblinCharacter()
-enemy_slots[3].content = TrollCharacter()
+ally_slots[0].content = Velocirougue()
+ally_slots[1].content = Pterapike()
+ally_slots[2].content = Dilophmageras()
+ally_slots[3].content = Stabiraptor()
+enemy_slots[0].content = Spinoswordaus()
+enemy_slots[1].content = Healamimus()
+enemy_slots[2].content = Macedon()
+enemy_slots[3].content = Ateratops()
 
 
 class MockRenderer(PygameRenderer):
