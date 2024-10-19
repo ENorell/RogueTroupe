@@ -30,55 +30,12 @@ enemy_slots[2].content = Macedon()
 enemy_slots[3].content = Ateratops()
 
 
-class MockRenderer(PygameRenderer):
-    def draw_frame(self, loopable: CombatState):
-        
-        draw_button(self.frame, loopable.continue_button )
-                
-        for slot in loopable.ally_slots + loopable.enemy_slots:
-            draw_slot(self.frame, slot)
-            
-            if not slot.content: continue
-
-            is_acting = loopable.current_round.current_turn.character == slot.content and not loopable.current_round.current_turn.character.is_dead()
-
-            scale_ratio = 1.5 if slot.is_hovered or is_acting else 1
-
-            draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)
-
-
-class MockRenderer2(PygameRenderer):
-    def __init__(self) -> None:
-        super().__init__()
-        self.shop_renderer = ShopRenderer()
-
-    def draw_frame(self, state_machine: StateMachine):
-        if isinstance(state_machine.state, CombatState):
-            draw_button(self.frame, state_machine.state.continue_button )
-                    
-            for slot in state_machine.state.ally_slots + state_machine.state.enemy_slots:
-                draw_slot(self.frame, slot)
-                
-                if not slot.content: continue
-
-                is_acting = state_machine.state.current_round.current_turn.character == slot.content and not state_machine.state.current_round.current_turn.character.is_dead()
-
-                scale_ratio = 1.5 if slot.is_hovered or is_acting else 1
-
-                draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)
-
-        elif isinstance(state_machine.state, ShopState):
-            self.shop_renderer.draw_frame(state_machine.state)
-
-
 combat_state = CombatState(ally_slots, enemy_slots)
-#combat_state.start_state()
 
 preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
-#preparation_state.start_state()
 
 shop_state = ShopState(ally_slots, bench_slots)
-#shop_state.start_state()
+
 
 states: dict[StateChoice, State] = {
     StateChoice.SHOP: shop_state,

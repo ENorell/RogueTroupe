@@ -5,8 +5,9 @@ from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
 from interactable import Button, draw_button
 from typing import Final
+from pygame import transform, image
 
-from settings import Vector, Color
+from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
 SHOP_POOL: list[type] = [
@@ -26,7 +27,7 @@ SHOP_SLOT_DISTANCE_X: Final[int] = 60
 SHOP_SLOT_DISTANCE_Y: Final[int] = 80
 SHOP_SLOT_COLOR:    Final[Color] = (119, 64, 36)
 BENCH_SLOT_COLOR:   Final[Color] = (54, 68, 90)
-
+SHOP_BACKGROUND_IMAGE_PATH: Final[str] = 'assets/backgrounds/shop_jungle.webp'
 
 
 def create_shop_slots() -> list[CharacterSlot]:
@@ -64,8 +65,11 @@ class ShopState(State):
 
 
 class ShopRenderer(DragDropRenderer):
+    background_image = transform.scale(image.load(SHOP_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, shop: ShopState):
+        self.frame.blit(self.background_image, (0, 0))
+
         super().draw_frame(shop.drag_dropper)
 
         draw_button(self.frame, shop.start_combat_button)

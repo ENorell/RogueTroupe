@@ -67,36 +67,25 @@ class Game(StateMachine):
 
         super().__init__(states, start_state=StateChoice.SHOP)
 
+
 class GameRenderer(PygameRenderer):
     def __init__(self) -> None:
         super().__init__()
         self.shop_renderer = ShopRenderer()
         self.preparation_renderer = PreparationRenderer()
         self.combat_renderer = CombatRenderer()
-        self.clock = pygame.time.Clock()  # Create a Clock object for tracking FPS
 
     def draw_frame(self, game: Game):
         # Set the appropriate background image based on the game state
         match game.state:
             case CombatState():
-                self.frame.blit(self.background_images['COMBAT'], (0, 0))
                 self.combat_renderer.draw_frame(game.state)
 
             case PreparationState():
-                self.frame.blit(self.background_images['PREPARATION'], (0, 0))
                 self.preparation_renderer.draw_frame(game.state)
 
             case ShopState():
-                self.frame.blit(self.background_images['SHOP'], (0, 0))
                 self.shop_renderer.draw_frame(game.state)
 
             case _:
                 raise Exception(f"Unknown state to render: {game.state}")
-
-        # Update the display
-        pygame.display.flip()
-
-        # Tick the clock and log FPS
-        fps = self.clock.get_fps()
-        print(f"FPS: {fps:.2f}")  # Print the FPS value
-        self.clock.tick(60)  # Cap the frame rate at 60 FPS

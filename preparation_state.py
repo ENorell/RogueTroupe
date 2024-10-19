@@ -4,14 +4,18 @@ from character import Character, Character, draw_character, Spinoswordaus, Stabi
 from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
+from typing import Final
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
+from pygame import transform, image
 
 
-ENEMY_POOL: list[type] = [
+ENEMY_POOL: Final[list[type]] = [
     Spinoswordaus,
     Stabiraptor,
     Pterapike,
     Ateratops
 ]
+PREPARATION_BACKGROUND_IMAGE_PATH: Final[str] = 'assets/backgrounds/combat_jungle.webp'
 
 
 class PreparationState(State):
@@ -38,8 +42,11 @@ class PreparationState(State):
 
 
 class PreparationRenderer(DragDropRenderer):
+    background_image = transform.scale(image.load(PREPARATION_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, preparation_state: PreparationState):
+        self.frame.blit(self.background_image, (0, 0))
+
         super().draw_frame(preparation_state.drag_dropper)
 
         draw_button(self.frame, preparation_state.continue_button )
@@ -49,4 +56,4 @@ class PreparationRenderer(DragDropRenderer):
 
             scale_ratio = 1.5 if slot.is_hovered else 1
 
-            if slot.content:  draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)
+            if slot.content: draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)

@@ -1,12 +1,16 @@
 from interfaces import UserInput
 from character import Character, draw_character
 from character_slot import CharacterSlot, draw_slot
-from settings import GAME_FPS
+from settings import GAME_FPS, DISPLAY_HEIGHT, DISPLAY_WIDTH
 from state_machine import State, StateChoice
 from interactable import Button, draw_button, draw_text
 from renderer import PygameRenderer
 from typing import Optional
-import pygame
+from pygame import image, transform, font
+
+
+COMBAT_BACKGROUND_IMAGE_PATH = 'assets/backgrounds/combat_jungle.webp'
+
 
 class Delay:
     def __init__(self, delay_time_s: float) -> None:
@@ -152,7 +156,11 @@ class CombatState(State):
 
 
 class CombatRenderer(PygameRenderer):
+    background_image = transform.scale(image.load(COMBAT_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+
     def draw_frame(self, combat_state: CombatState) -> None:
+        self.frame.blit(self.background_image, (0, 0))
+
         if combat_state.is_combat_concluded():
             draw_button(self.frame, combat_state.continue_button)
             result_text = "You lost..." if is_everyone_dead(combat_state.ally_slots) else "You won!"
@@ -167,7 +175,7 @@ class CombatRenderer(PygameRenderer):
                 draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio=1.5 if slot.is_hovered or is_acting else 1)
 
         if combat_state.battle_log:
-            font = pygame.font.SysFont(None, 32)
+            text_font = font.SysFont(None, 32)
             for i, log_entry in enumerate(combat_state.battle_log[-5:]):
-                text_surface = font.render(log_entry, True, (255, 255, 255))
+                text_surface = text_font.render(log_entry, True, (255, 255, 255))
                 self.frame.blit(text_surface, (30, 160 + i * 32))

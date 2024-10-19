@@ -1,4 +1,4 @@
-from pygame import display
+from pygame import display, time, Surface
 from typing import Final
 from interfaces import Renderer, Loopable
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
@@ -6,14 +6,12 @@ from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
 from pygame import display, image, transform
 from typing import Final
 from interfaces import Renderer, Loopable
-from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
+from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
+from interactable import draw_text
 
 
-BACKGROUND_IMAGE_PATHS: Final[dict] = {
-    'SHOP': 'assets/backgrounds/shop_jungle.webp',
-    'PREPARATION': 'assets/backgrounds/combat_jungle.webp', #Will this just be same as combat?
-    'COMBAT': 'assets/backgrounds/combat_jungle.webp'
-}
+FPS_SCREEN_POSITION: Final[Vector] = (750,50)
+
 
 class NoRenderer(Renderer):
     def render(self, loopable: Loopable) -> None:
@@ -25,15 +23,17 @@ class PygameRenderer(Renderer):
     def __init__(self) -> None:
         self.frame = display.set_mode((DISPLAY_WIDTH, DISPLAY_HEIGHT))
         display.set_caption(GAME_NAME)
-        self.background_images = {
-            'SHOP': transform.scale(image.load(BACKGROUND_IMAGE_PATHS['SHOP']), (DISPLAY_WIDTH, DISPLAY_HEIGHT)),
-            'PREPARATION': transform.scale(image.load(BACKGROUND_IMAGE_PATHS['PREPARATION']), (DISPLAY_WIDTH, DISPLAY_HEIGHT)),
-            'COMBAT': transform.scale(image.load(BACKGROUND_IMAGE_PATHS['COMBAT']), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
-        }
+        self.fps_clock = time.Clock()  # Second clock with only purpose to record fps...
+
+    def draw_fps(self) -> None:
+        self.fps_clock.tick()
+        fps = round(self.fps_clock.get_fps())
+        draw_text(str(fps), self.frame, center_position=FPS_SCREEN_POSITION, scale_ratio=1.5)
 
     def render(self, loopable: Loopable) -> None:
         self.draw_frame(loopable)
-        display.flip()
+        self.draw_fps()
+        display.update()
 
     def draw_frame(self, loopable: Loopable):
         ...
