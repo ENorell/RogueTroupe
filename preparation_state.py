@@ -4,6 +4,7 @@ from character import Character, KnightCharacter, WizardCharacter, TrollCharacte
 from character_slot import CharacterSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
+from logger import logging
 
 
 ENEMY_POOL: list[type] = [
@@ -24,6 +25,7 @@ class PreparationState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
+        logging.info("Entering preparation phase")
         generate_characters(self.enemy_slots, ENEMY_POOL)
 
     def loop(self, user_input: UserInput) -> None:
@@ -33,6 +35,7 @@ class PreparationState(State):
         self.continue_button.refresh(user_input.mouse_position)
         if self.continue_button.is_hovered and user_input.is_mouse1_up:
             self.next_state = StateChoice.BATTLE
+            logging.debug("Continue button clicked, switching states")
 
         self.drag_dropper.loop(user_input)
 

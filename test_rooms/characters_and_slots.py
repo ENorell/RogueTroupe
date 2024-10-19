@@ -8,6 +8,9 @@ from preparation_state import PreparationState, PreparationRenderer
 from character import WizardCharacter
 from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
 
+from logger import logging
+logging.getLogger().setLevel(logging.DEBUG)
+
 
 ally_slots = [
     CharacterSlot((25 ,400), BATTLE_SLOT_COLOR),

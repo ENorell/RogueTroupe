@@ -6,6 +6,7 @@ from state_machine import State, StateChoice
 from interactable import Button, draw_button, draw_text
 from renderer import PygameRenderer
 from typing import Optional
+import logging
 
 class BattlePhase: #not used now, but might be necessary later if there are several components to a turn
     
@@ -41,7 +42,9 @@ class BattleTurn:
         self.target_character: Optional[Character] = living_enemies[0] if living_enemies else None
 
     def start_turn(self) -> None:
+        logging.debug(f"Starting turn for {self.character.name}")
         if self.character.is_dead():
+            logging.debug(f"{self.character.name} is dead, skipping turn")
             self.is_done = True
             return
         #Start of turn effects
@@ -53,7 +56,10 @@ class BattleTurn:
             return
         
         if self.target_character:
+            logging.debug(f"{self.character.name} attacks {self.target_character.name} for {self.character.damage}")
             self.target_character.damage_health(self.character.damage)
+        else:
+            logging.debug(f"{self.character.name} found no viable target and skips their turn")
         self.is_done = True
 
 
@@ -64,16 +70,16 @@ class BattleRound:
         self.turn_order = self.get_turn_order()
         self.is_done = False
 
-
     def get_turn_order(self) -> list[BattleTurn]:
         living_characters = [slot.content for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead()]
+        logging.debug(f"Turn order created for {len(living_characters)} characters")
         return [BattleTurn(character, self.ally_slots, self.enemy_slots) for character in living_characters]
 
     def start_round(self) -> None:
         self.current_turn: BattleTurn = self.turn_order[0]
         self.current_turn.start_turn()
 
-    def next_round(self) -> None:
+    def next_turn(self) -> None:
         self.turn_order.remove(self.current_turn)
         if not self.turn_order:
             self.is_done = True
@@ -84,7 +90,7 @@ class BattleRound:
 
     def loop(self) -> None:
         if self.current_turn.is_done:
-            self.next_round()
+            self.next_turn()
             return
         
         self.current_turn.loop()
@@ -95,11 +101,13 @@ def is_everyone_dead(slots: list[CharacterSlot]):
     return not bool( characters_alive )
 
 def revive_ally_characters(slots: list[CharacterSlot]) -> None:
+    logging.debug(f"Attempting to revive characters in {len(slots)} slots")
     for slot in slots:
         if not slot.content:
             return
         
         slot.content.revive()
+        logging.debug(f"Revived {slot.content.name}")
 
 
 class CombatState(State):
@@ -110,9 +118,13 @@ class CombatState(State):
         self.continue_button = Button((400,500), "Continue...")
 
     def start_state(self) -> None:
+        logging.info("Starting Combat")
+        self.round_counter = 0
         self.start_new_round()
-
+        
     def start_new_round(self) -> None:
+        self.round_counter += 1
+        logging.info(f"Starting Round {self.round_counter}")
         self.current_round = BattleRound(self.ally_slots, self.enemy_slots)
         self.current_round.start_round()
 
@@ -128,6 +140,7 @@ class CombatState(State):
 
         if self.is_combat_concluded():
             if self.continue_button.is_hovered and user_input.is_mouse1_up:
+                logging.debug("Continue button clicked, switching states")
                 revive_ally_characters(self.ally_slots)
                 self.next_state = StateChoice.SHOP
         else:
