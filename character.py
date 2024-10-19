@@ -1,7 +1,7 @@
-from typing import Optional, Final
-from settings import Vector, Color, WHITE_COLOR, BLACK_COLOR, RED_COLOR, GREEN_COLOR, DEFAULT_TEXT_SIZE
-from pygame import Surface, Rect, draw, font, transform, image
 import pygame
+from typing import Optional
+from settings import Vector, Color, WHITE_COLOR, DEFAULT_TEXT_SIZE
+from pygame import Surface, Rect, font, transform
 
 
 class Character:
@@ -13,22 +13,32 @@ class Character:
     range: int = 1
     target: set[int] = {1}
     ability_name: Optional[str] = None
-    trigger: Optional[str] = None  # combat_start, attack, attacked, damaged, death, persistent
+    trigger: Optional[str] = None
 
     def __init__(self, is_enemy: bool = False) -> None:
         self.health = self.max_health
         self.is_attacking = False
         self.is_defending = False
         self.is_enemy = is_enemy
+        self.image = None
+
+    def load_image(self) -> None:
+        """Load character image if not already loaded."""
+        if self.image is None and hasattr(self, 'image_path'):
+            self.image = pygame.image.load(self.image_path).convert_alpha()
+            if self.is_enemy:
+                self.image = pygame.transform.flip(self.image, True, False)
+            self.image = pygame.transform.scale(self.image, (self.width_pixels, self.height_pixels))
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
 
     def is_dead(self) -> bool:
         return self.health == 0
-    
+
     def revive(self) -> None:
         self.health = self.max_health
+
 
 class Archeryptrx(Character):
     #A simple archer with upfront damage and range
@@ -162,7 +172,6 @@ class Velocirougue(Character):
     image_path: str = "assets/characters/velo-transformed.webp"
 
 
-
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
     font_size: int = round(DEFAULT_TEXT_SIZE * scale_ratio)
     text_font = font.SysFont(name="comicsans", size=font_size)
@@ -170,15 +179,16 @@ def draw_text(text_content: str, window: Surface, center_position: Vector, scale
     (text_size_x, text_size_y) = text.get_size()
     (center_x, center_y) = center_position
     text_topleft_position = (center_x - text_size_x / 2, center_y - text_size_y)
-
     window.blit(text, text_topleft_position)
 
-def draw_character(frame: Surface, mid_bottom: Vector, character: Character, color_override: Optional[Color] = None, scale_ratio: float = 1):
+
+def draw_character(frame: Surface, mid_bottom: Vector, character: Character, scale_ratio: float = 1):
+    # Load the image if it's not already loaded
+    character.load_image()
 
     center_x, bottom_y = mid_bottom
     top_left = (center_x - character.width_pixels / 2, bottom_y - character.height_pixels)
     rect = Rect(top_left, (character.width_pixels, character.height_pixels))
-
     rect = rect.scale_by(scale_ratio, scale_ratio)
 
     mid_top = (center_x, bottom_y - character.height_pixels)
@@ -187,27 +197,23 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, col
     draw_text(character.name, frame, mid_top, scale_ratio=scale_ratio)
 
     if character.health == 0:
-        draw_text(f"DEAD", frame, mid_bottom, scale_ratio=scale_ratio)
         # Draw character corpse image
-        CHARACTER_IMAGE = pygame.image.load("assets/corpse-transformed.webp")
+        CHARACTER_IMAGE = pygame.image.load("assets/corpse-transformed.webp").convert_alpha()
         if character.is_enemy:
             CHARACTER_IMAGE = pygame.transform.flip(CHARACTER_IMAGE, True, False)
-        image_scaled = pygame.transform.scale(CHARACTER_IMAGE, (rect.width, rect.height))
-        frame.blit(image_scaled, rect.topleft)
+        CHARACTER_IMAGE = pygame.transform.scale(CHARACTER_IMAGE, (rect.width, rect.height))
+        frame.blit(CHARACTER_IMAGE, rect.topleft)
+        draw_text(f"DEAD", frame, mid_bottom, scale_ratio=scale_ratio)
     else:
-        # Draw character image
-        CHARACTER_IMAGE = pygame.image.load(character.image_path)
-        if character.is_enemy:
-            CHARACTER_IMAGE = pygame.transform.flip(CHARACTER_IMAGE, True, False)
-        image_scaled = pygame.transform.scale(CHARACTER_IMAGE, (rect.width, rect.height))
-        frame.blit(image_scaled, rect.topleft)
-        
+        # Draw character image from preloaded one
+        frame.blit(character.image, rect.topleft)
+
         # Draw defending indicator if character is defending
         if character.is_defending:
             red_circle_radius = rect.width // 2
             red_circle_center = (rect.centerx, rect.centery)
             pygame.draw.circle(frame, (255, 0, 0), red_circle_center, red_circle_radius, width=5)
+
         # Draw health and damage text
-        # Draw health and damage text
-        health_damage_pos = (mid_bottom[0], mid_bottom[1] + 20)  # Adjust the value to control the vertical position
+        health_damage_pos = (mid_bottom[0], mid_bottom[1] + 20)
         draw_text(f"{character.health}/{character.max_health}  {character.damage}", frame, health_damage_pos, scale_ratio=scale_ratio)
