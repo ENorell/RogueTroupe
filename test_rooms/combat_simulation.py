@@ -5,7 +5,7 @@ from input_listener import PygameInputListener
 from engine import PygameEngine
 
 from character import *
-from character_slot import CharacterSlot
+from character_slot import CharacterSlot, CombatSlot
 from combat_state import CombatState
 from preparation_state import PreparationState
 from shop_state import ShopState, ShopRenderer
@@ -17,8 +17,8 @@ from logger import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-ally_slots:  list[CharacterSlot] = create_ally_slots()
-enemy_slots: list[CharacterSlot] = create_enemy_slots()
+ally_slots:  list[CombatSlot] = create_ally_slots()
+enemy_slots: list[CombatSlot] = create_enemy_slots()
 bench_slots: list[CharacterSlot] = create_bench_slots()
 
 ally_slots[0].content = Velocirougue()

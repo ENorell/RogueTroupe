@@ -1,6 +1,6 @@
 from state_machine import State, StateChoice
-from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
-from character_slot import CharacterSlot, generate_characters
+from character import Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
+from character_slot import CharacterSlot, CombatSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
 from interactable import Button, draw_button
@@ -43,7 +43,7 @@ def create_shop_slots() -> list[CharacterSlot]:
 
 
 class ShopState(State):
-    def __init__(self, ally_slots: list[CharacterSlot], bench_slots: list[CharacterSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot]) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.bench_slots = bench_slots

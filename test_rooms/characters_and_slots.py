@@ -6,17 +6,17 @@ from engine import PygameEngine
 from shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
 from preparation_state import PreparationState, PreparationRenderer
 from character import Stabiraptor
-from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
+from character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
 
 from logger import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
 
 ally_slots = [
-    CharacterSlot((25 ,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((125,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((225,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((325,400), BATTLE_SLOT_COLOR)
+    CombatSlot((25 ,400), 1, BATTLE_SLOT_COLOR),
+    CombatSlot((125,400), 2, BATTLE_SLOT_COLOR),
+    CombatSlot((225,400), 3, BATTLE_SLOT_COLOR),
+    CombatSlot((325,400), 4, BATTLE_SLOT_COLOR)
     ]
 
 bench_slots = [
@@ -25,10 +25,10 @@ bench_slots = [
 ]
 
 enemy_slots = [
-    CharacterSlot((425,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((525,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((625,400), BATTLE_SLOT_COLOR),
-    CharacterSlot((725,400), BATTLE_SLOT_COLOR)
+    CombatSlot((425,400), 5, BATTLE_SLOT_COLOR),
+    CombatSlot((525,400), 6, BATTLE_SLOT_COLOR),
+    CombatSlot((625,400), 7, BATTLE_SLOT_COLOR),
+    CombatSlot((725,400), 8, BATTLE_SLOT_COLOR)
     ]
 
 ally_slots[0].content = Stabiraptor()

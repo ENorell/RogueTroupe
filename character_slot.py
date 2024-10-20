@@ -1,7 +1,7 @@
 from interactable import Interactable
 from settings import Color, Vector, BLACK_COLOR
 from pygame import Surface, Rect, draw
-from typing import Final, Optional
+from typing import Final, Optional, Sequence
 from character import Character
 from random import choice
 
@@ -36,7 +36,7 @@ class CombatSlot(CharacterSlot):
         super().__init__(position, color)
 
 
-def generate_characters(slots: list[CharacterSlot], character_type_pool: list[type]) -> None:
+def generate_characters(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
     for slot in slots:
         character_type = choice(character_type_pool)
         slot.content = character_type()

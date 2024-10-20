@@ -1,7 +1,7 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
 from character import draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
-from character_slot import CharacterSlot, draw_slot, generate_characters
+from character_slot import CharacterSlot, CombatSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
 from typing import Final
@@ -20,7 +20,7 @@ ENEMY_POOL: Final[list[type]] = [
 
 
 class PreparationState(State):
-    def __init__(self, ally_slots: list[CharacterSlot], bench_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot], enemy_slots: list[CombatSlot]) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.bench_slots = bench_slots

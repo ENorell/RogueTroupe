@@ -29,16 +29,16 @@ class Delay:
 
 
 # This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
-def distance_between(slot_a: CharacterSlot, slot_b: CharacterSlot, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> int:
-    # Assume that first element is closest to center
-    battle_slots = ally_slots[::-1] + enemy_slots 
-    return abs( battle_slots.index(slot_a) - battle_slots.index(slot_b) )
-    #return abs( slot_a.coordinate - slot_b.coordinate )
+def distance_between(slot_a: CombatSlot, slot_b: CombatSlot) -> int:
+    return abs( slot_a.coordinate - slot_b.coordinate )
+
 
 class BattleTurn:
-    def __init__(self, acting_slot: CharacterSlot, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
+    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], battle_log: list[str]) -> None:
         self.acting_slot = acting_slot
-        self.character = character
+        assert acting_slot.content # We should never be here if it was empty
+        self.character: Character = acting_slot.content
+        
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.battle_log = battle_log
@@ -53,7 +53,7 @@ class BattleTurn:
             if not target_slot.content: continue
             target_candidate = target_slot.content
             if target_candidate.is_dead(): continue
-            if not self.character.range >= distance_between(self.acting_slot, target_slot, self.ally_slots, self.enemy_slots): continue
+            if not self.character.range >= distance_between(self.acting_slot, target_slot): continue
 
             target_candidate.is_defending = True
             return target_candidate
@@ -100,14 +100,14 @@ class BattleTurn:
 
 
 class BattleRound:
-    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], battle_log: list[str]) -> None:
         self.battle_log = battle_log
         self.is_done = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
 
     def start_round(self) -> None:
-        self.slot_turn_order: list[CharacterSlot] = [slot for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead() ]
+        self.slot_turn_order: list[CombatSlot] = [slot for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead() ]
         
         self.start_next_turn()
         
@@ -119,7 +119,7 @@ class BattleRound:
         next_slot = self.slot_turn_order.pop(0)
         assert next_slot.content
 
-        self.current_turn = BattleTurn(next_slot, next_slot.content, self.ally_slots, self.enemy_slots, self.battle_log) 
+        self.current_turn = BattleTurn(next_slot, self.ally_slots, self.enemy_slots, self.battle_log) 
         self.current_turn.start_turn()
 
     def end_round(self) -> None:
@@ -159,18 +159,18 @@ class BattleRound:
             for i, character in enumerate(non_empty_slots):
                 slots[i].content = character
 
-def revive_ally_characters(slots: list[CharacterSlot]) -> None:
+def revive_ally_characters(slots: list[CombatSlot]) -> None:
     for slot in slots:
         if slot.content:
             slot.content.revive()
             logging.debug(f"Revived {slot.content.name}")
 
-def is_everyone_dead(slots: list[CharacterSlot]) -> bool:
+def is_everyone_dead(slots: list[CombatSlot]) -> bool:
     return all(slot.content is None or slot.content.is_dead() for slot in slots)
 
 
 class CombatState(State):
-    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
