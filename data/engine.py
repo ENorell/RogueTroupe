@@ -1,8 +1,10 @@
 import traceback
 import pygame
-from interfaces import Engine, Loopable, Renderer, InputListener
-from settings import GAME_FPS
 from time import sleep
+
+from data.interfaces import Engine, Loopable, Renderer, InputListener
+from settings import GAME_FPS
+
 
 
 class PygameEngine(Engine):

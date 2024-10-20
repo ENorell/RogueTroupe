@@ -1,14 +1,16 @@
-from interfaces import UserInput
-from state_machine import State, StateChoice
-from character import draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
-from character_slot import CharacterSlot, draw_slot, generate_characters
-from drag_dropper import DragDropper, DragDropRenderer
-from interactable import Button, draw_button
-from typing import Final
-from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
 from pygame import transform
-from images import IMAGES, ImageChoice
-from logger import logging
+from typing import Final
+
+from data.interfaces import UserInput
+from data.state_machine import State, StateChoice
+from data.character import draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
+from data.character_slot import CharacterSlot, draw_slot, generate_characters
+from data.drag_dropper import DragDropper, DragDropRenderer
+from data.interactable import Button, draw_button
+from data.images import IMAGES, ImageChoice
+from data.logger import logging
+
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
 ENEMY_POOL: Final[list[type]] = [

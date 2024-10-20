@@ -1,14 +1,13 @@
-import pygame  # Add import for Pygame
-
-from interfaces import Loopable, UserInput
-from renderer import PygameRenderer
-from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
-from state_machine import StateMachine, State, StateChoice
-from combat_state import CombatState, CombatRenderer
-from preparation_state import PreparationState, PreparationRenderer
-from shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
-
 from typing import Final
+
+from data.interfaces import Loopable, UserInput
+from data.renderer import PygameRenderer
+from data.character_slot import CharacterSlot, BATTLE_SLOT_COLOR
+from data.state_machine import StateMachine, State, StateChoice
+from data.combat_state import CombatState, CombatRenderer
+from data.preparation_state import PreparationState, PreparationRenderer
+from data.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
+
 from settings import DISPLAY_WIDTH
 
 NR_BATTLE_SLOTS_PER_TEAM: Final[int] = 4

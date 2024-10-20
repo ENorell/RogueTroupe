@@ -1,9 +1,10 @@
 import pygame
-from typing import Optional
-from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
-from pygame import Surface, Rect, font
-from images import ImageChoice, IMAGES
 from abc import ABC
+from typing import Optional
+from pygame import Surface, Rect, font
+
+from data.images import ImageChoice, IMAGES
+from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
 
 
 class Character(ABC):

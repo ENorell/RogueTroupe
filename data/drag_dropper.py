@@ -1,8 +1,9 @@
-from character_slot import CharacterSlot, draw_slot
-from character import draw_character
-from interfaces import UserInput
 from typing import Optional
-from renderer import PygameRenderer
+
+from data.character_slot import CharacterSlot, draw_slot
+from data.character import draw_character
+from data.interfaces import UserInput
+from data.renderer import PygameRenderer
 import logging
 
 

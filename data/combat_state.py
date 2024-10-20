@@ -1,14 +1,16 @@
-from interfaces import UserInput
-from character import Character, draw_character
-from character_slot import CharacterSlot, draw_slot
-from settings import GAME_FPS, DISPLAY_HEIGHT, DISPLAY_WIDTH
-from state_machine import State, StateChoice
-from interactable import Button, draw_button, draw_text
-from renderer import PygameRenderer
-from typing import Optional
 from pygame import transform, font
-from images import IMAGES, ImageChoice
+from typing import Optional
 import logging
+
+from data.interfaces import UserInput
+from data.character import Character, draw_character
+from data.character_slot import CharacterSlot, draw_slot
+from data.state_machine import State, StateChoice
+from data.interactable import Button, draw_button, draw_text
+from data.renderer import PygameRenderer
+from data.images import IMAGES, ImageChoice
+
+from settings import GAME_FPS, DISPLAY_HEIGHT, DISPLAY_WIDTH
 
 
 class Delay:

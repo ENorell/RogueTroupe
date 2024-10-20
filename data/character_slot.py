@@ -1,10 +1,10 @@
-from interactable import Interactable
-from settings import Color, Vector, BLACK_COLOR
 from pygame import Surface, Rect, draw
 from typing import Final, Optional
-from character import Character
 from random import choice
 
+from data.interactable import Interactable
+from data.character import Character
+from settings import Color, Vector, BLACK_COLOR
 
 BATTLE_SLOT_COLOR: Final[Color] = (57, 122, 65)
 SLOT_HOVER_WIDTH: Final[int] = 3

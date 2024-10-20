@@ -1,19 +1,13 @@
-import os, sys
-sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
-
-from input_listener import PygameInputListener
-from engine import PygameEngine
-
-from character import *
-from character_slot import CharacterSlot
-from combat_state import CombatState
-from preparation_state import PreparationState
-from shop_state import ShopState, ShopRenderer
-from game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
-
-from state_machine import StateMachine, State, StateChoice
-
-from logger import logging
+from data.input_listener import PygameInputListener
+from data.engine import PygameEngine
+from data.character import *
+from data.character_slot import CharacterSlot
+from data.combat_state import CombatState
+from data.preparation_state import PreparationState
+from data.shop_state import ShopState, ShopRenderer
+from data.game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
+from data.state_machine import StateMachine, State, StateChoice
+from data.logger import logging # To get baseconfig and set custom debug level
 logging.getLogger().setLevel(logging.DEBUG)
 
 

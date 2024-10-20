@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 from enum import Enum, auto
-from interfaces import UserInput
+
+from data.interfaces import UserInput
 
 
 class StateChoice(Enum):

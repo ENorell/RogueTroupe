@@ -1,13 +1,9 @@
 from pygame import display, time, Surface
 from typing import Final
-from interfaces import Renderer, Loopable
-from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
 
-from pygame import display, image, transform
-from typing import Final
-from interfaces import Renderer, Loopable
-from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
-from interactable import draw_text
+from data.interfaces import Renderer, Loopable
+from data.interactable import draw_text
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Vector
 
 
 FPS_SCREEN_POSITION: Final[Vector] = (750,50)

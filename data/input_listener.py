@@ -1,6 +1,7 @@
-from interfaces import UserInput, InputListener
 from pygame import event, QUIT, MOUSEBUTTONDOWN, MOUSEBUTTONUP, KEYDOWN, K_SPACE, mouse, key
 from keyboard import is_pressed
+
+from data.interfaces import UserInput, InputListener
 
 
 class PygameInputListener(InputListener):

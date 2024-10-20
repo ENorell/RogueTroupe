@@ -1,14 +1,10 @@
-import os, sys
-sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
-
-from input_listener import DeafInputListener, PygameInputListener
-from engine import PygameEngine
-from shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
-from preparation_state import PreparationState, PreparationRenderer
-from character import Stabiraptor
-from character_slot import CharacterSlot, BATTLE_SLOT_COLOR
-
-from logger import logging
+from data.input_listener import DeafInputListener, PygameInputListener
+from data.engine import PygameEngine
+from data.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
+from data.preparation_state import PreparationState, PreparationRenderer
+from data.character import Stabiraptor
+from data.character_slot import CharacterSlot, BATTLE_SLOT_COLOR
+from data.logger import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
 
