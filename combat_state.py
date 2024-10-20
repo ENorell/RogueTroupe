@@ -1,14 +1,18 @@
 from interfaces import UserInput
 from character import Character, draw_character
-from character_slot import CharacterSlot, draw_slot
+from character_slot import CharacterSlot, CombatSlot, draw_slot
 from settings import GAME_FPS, DISPLAY_HEIGHT, DISPLAY_WIDTH
 from state_machine import State, StateChoice
 from interactable import Button, draw_button, draw_text
 from renderer import PygameRenderer
-from typing import Optional
+from typing import Optional, Final
 from pygame import transform, font
 from images import IMAGES, ImageChoice
 import logging
+
+
+TURN_ATTACK_DELAY_TIME_S: Final[float] = 0.5
+CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
 
 class Delay:
@@ -24,77 +28,114 @@ class Delay:
         return self.frame_counter >= self.delay_frames
 
 
+# This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
+def distance_between(slot_a: CharacterSlot, slot_b: CharacterSlot, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> int:
+    # Assume that first element is closest to center
+    battle_slots = ally_slots[::-1] + enemy_slots 
+    return abs( battle_slots.index(slot_a) - battle_slots.index(slot_b) )
+    #return abs( slot_a.coordinate - slot_b.coordinate )
+
 class BattleTurn:
-    def __init__(self, character: Character, character_index: int, attacker_slots: list[CharacterSlot], defender_slots: list[CharacterSlot], battle_log: list[str]) -> None:
+    def __init__(self, acting_slot: CharacterSlot, character: Character, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
+        self.acting_slot = acting_slot
         self.character = character
-        self.character_index = character_index  # Store the character index as an instance attribute
-        self.attacker_slots = attacker_slots
-        self.defender_slots = defender_slots
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
         self.battle_log = battle_log
-        self.delay = Delay(0.5)
+        self.delay = Delay(TURN_ATTACK_DELAY_TIME_S)
         self.is_done = False
         self.target_character: Optional[Character] = None
 
-    def determine_target(self) -> None:
-        for i in range(len(self.defender_slots) - 1, -1, -1):
-            defender_slot = self.defender_slots[i]
-            if defender_slot.content and not defender_slot.content.is_dead() and self.character.range >= i + self.character_index + 1:
-                self.target_character = defender_slot.content
-                self.target_character.is_defending = True
-                return
-        self.target_character = None
+    def determine_target(self) -> Optional[Character]:
+        defender_slots = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
+
+        for target_slot in reversed( defender_slots ):
+            if not target_slot.content: continue
+            target_candidate = target_slot.content
+            if target_candidate.is_dead(): continue
+            if not self.character.range >= distance_between(self.acting_slot, target_slot, self.ally_slots, self.enemy_slots): continue
+
+            target_candidate.is_defending = True
+            return target_candidate
+
 
     def start_turn(self) -> None:
-        logging.debug(f"Starting turn for {self.character.name}")
+        logging.debug(f"Starting turn for {self.character.name} {"(Ally)" if self.acting_slot in self.ally_slots else "(Enemy)"}")
+
         if self.character.is_dead():
             logging.debug(f"{self.character.name} is dead, skipping turn")
             self.is_done = True
             return
-        self.determine_target()
+        
+        self.target_character = self.determine_target()
+
+    def end_turn(self) -> None:
+        # Potential end of turn effects
+        self.is_done = True
 
     def loop(self) -> None:
-        if not self.target_character or self.delay.is_done:
-            if self.target_character:
-                self.target_character.damage_health(self.character.damage)
-                log_message = f"{self.character.name} attacks {self.target_character.name} for {self.character.damage} damage!"
-                self.battle_log.append(log_message)
-                logging.debug(log_message)
-                self.target_character.is_defending = False
-            else:
-                log_message = f"{self.character.name} has no target to attack."
-                self.battle_log.append(log_message)
-                logging.debug(log_message)
-            self.is_done = True
-        else:
+        # Delay game slightly before acting
+        if not self.delay.is_done:
             self.delay.tick()
+            return
+        
+        # Exit if no viable target is found
+        if not self.target_character:
+            log_message = f"{self.character.name} has no target to attack (range {self.character.range})."
+            self.battle_log.append(log_message)
+            logging.debug(log_message)
+            self.end_turn()
+            return
+
+        # Then execute attack
+        self.target_character.damage_health(self.character.damage)
+        log_message = f"{self.character.name} attacks {self.target_character.name} for {self.character.damage} damage!"
+        self.battle_log.append(log_message)
+        logging.debug(log_message)
+        self.target_character.is_defending = False
+        if self.target_character.is_dead(): logging.debug(f"{self.target_character.name} died")
+        
+        self.end_turn()
+            
 
 
 class BattleRound:
     def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
         self.battle_log = battle_log
-        ally_turns = [BattleTurn(slot.content, i, ally_slots, enemy_slots, self.battle_log) for i, slot in enumerate(ally_slots) if slot.content and not slot.content.is_dead()]
-        enemy_turns = [BattleTurn(slot.content, i, enemy_slots, ally_slots, self.battle_log) for i, slot in enumerate(enemy_slots) if slot.content and not slot.content.is_dead()]
-
-        self.turn_order = ally_turns + enemy_turns
-        self.current_turn: Optional[BattleTurn] = None
         self.is_done = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
 
     def start_round(self) -> None:
-        if self.turn_order:
-            self.current_turn = self.turn_order.pop(0)
-            self.current_turn.start_turn()
-        else:
-            self.is_done = True
-            self.cleanup_dead_units()  # Clean up dead units at the end of the round
-            self.shift_units_forward()  # Shift units forward to fill empty slots
+        self.slot_turn_order: list[CharacterSlot] = [slot for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead() ]
+        
+        self.start_next_turn()
+        
+    def start_next_turn(self) -> None:
+        if not self.slot_turn_order:
+            self.end_round()
+            return
+        
+        next_slot = self.slot_turn_order.pop(0)
+        assert next_slot.content
+
+        self.current_turn = BattleTurn(next_slot, next_slot.content, self.ally_slots, self.enemy_slots, self.battle_log) 
+        self.current_turn.start_turn()
+
+    def end_round(self) -> None:
+        # Potential end of round effects
+        self.cleanup_dead_units()  # Clean up dead units at the end of the round
+        self.shift_units_forward()  # Shift units forward to fill empty slots
+        self.is_done = True
 
     def loop(self) -> None:
-        if self.current_turn and self.current_turn.is_done:
-            self.start_round()
-        elif self.current_turn:
-            self.current_turn.loop()
+        assert self.current_turn # Something is wrong if we have gotten here with no turn
+        
+        if self.current_turn.is_done:
+            self.start_next_turn()
+            return
+
+        self.current_turn.loop()
     
     def cleanup_dead_units(self) -> None:
         """Remove dead characters from slots after a round."""
@@ -153,15 +194,18 @@ class CombatState(State):
     def loop(self, user_input: UserInput) -> None:
         self.continue_button.refresh(user_input.mouse_position)
 
+        if self.current_round.is_done:
+            self.start_new_round()
+            return
+
         if self.is_combat_concluded():
             if (self.continue_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
                 logging.debug("Continue button clicked, switching states")
                 revive_ally_characters(self.ally_slots)
                 self.next_state = StateChoice.SHOP
-        elif not self.current_round.is_done:
-            self.current_round.loop()
-        else:
-            self.start_new_round()
+            return
+            
+        self.current_round.loop()
 
 
 class CombatRenderer(PygameRenderer): 
@@ -181,7 +225,10 @@ class CombatRenderer(PygameRenderer):
                 is_acting = (combat_state.current_round and combat_state.current_round.current_turn and
                              combat_state.current_round.current_turn.character == slot.content and
                              not slot.content.is_dead())
-                draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio=1.5 if slot.is_hovered or is_acting else 1)
+                is_enemy_slot = slot in combat_state.enemy_slots
+                scale_ratio = CHARACTER_HOVER_SCALE_RATIO if slot.is_hovered or is_acting else 1
+
+                draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio)
 
         if combat_state.battle_log:
             text_font = font.SysFont(None, 32)

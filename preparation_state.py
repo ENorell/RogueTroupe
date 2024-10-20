@@ -30,7 +30,7 @@ class PreparationState(State):
 
     def start_state(self) -> None:
         logging.info("Entering preparation phase")
-        generate_characters(self.enemy_slots, ENEMY_POOL, True)
+        generate_characters(self.enemy_slots, ENEMY_POOL)
 
 
     def loop(self, user_input: UserInput) -> None:
@@ -59,5 +59,6 @@ class PreparationRenderer(DragDropRenderer):
             draw_slot(self.frame, slot)
 
             scale_ratio = 1.5 if slot.is_hovered else 1
+            is_enemy_slot = slot in preparation_state.enemy_slots
 
-            if slot.content: draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio = scale_ratio)
+            if slot.content: draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio = scale_ratio)

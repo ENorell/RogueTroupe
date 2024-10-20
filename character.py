@@ -18,11 +18,10 @@ class Character(ABC):
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
-    def __init__(self, is_enemy: bool = False) -> None:
+    def __init__(self) -> None:
         self.health = self.max_health
         self.is_attacking = False
         self.is_defending = False
-        self.is_enemy = is_enemy
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
@@ -176,7 +175,7 @@ def draw_text(text_content: str, window: Surface, center_position: Vector, scale
     window.blit(text, text_topleft_position)
 
 
-def draw_character(frame: Surface, mid_bottom: Vector, character: Character, scale_ratio: float = 1):
+def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_enemy: bool = False, scale_ratio: float = 1):
     match character.is_dead():
         case True: 
             character_image = IMAGES[character.corpse_image].convert_alpha()
@@ -184,7 +183,7 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, sca
             character_image = IMAGES[character.character_image].convert_alpha()
     
     character_image = pygame.transform.scale(character_image, (character.width_pixels, character.height_pixels))
-    if character.is_enemy:
+    if is_enemy:
         character_image = pygame.transform.flip(character_image, True, False)
 
     center_x, bottom_y = mid_bottom
