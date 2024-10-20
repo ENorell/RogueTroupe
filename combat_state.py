@@ -106,6 +106,7 @@ class BattleRound:
             self.combat_start_abilities_triggered = True
 
     def setup_turn_order(self) -> None:
+        #Alternate between each team starting at the front
         ally_turns = [BattleTurn(slot.content, i, self.ally_slots, self.enemy_slots, self.battle_log) for i, slot in enumerate(self.ally_slots) if slot.content and not slot.content.is_dead()]
         enemy_turns = [BattleTurn(slot.content, i, self.enemy_slots, self.ally_slots, self.battle_log) for i, slot in enumerate(self.enemy_slots) if slot.content and not slot.content.is_dead()]
         self.turn_order = [turn for pair in zip(ally_turns, enemy_turns) for turn in pair] + ally_turns[len(enemy_turns):] + enemy_turns[len(ally_turns):]
@@ -184,6 +185,7 @@ class CombatState(State):
         self.combat_start_abilities_triggered = False
 
     def start_state(self) -> None:
+        self.combat_start_abilities_triggered = False
         logging.info("Starting Combat")
         self.round_counter = 0
         self.start_new_round()
