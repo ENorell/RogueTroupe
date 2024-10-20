@@ -1,0 +1,23 @@
+from enum import Enum
+from pygame import Surface, image
+
+
+class ImageChoice(Enum):
+    BACKGROUND_COMBAT_JUNGLE  = "assets/backgrounds/combat_jungle.webp"
+    BACKGROUND_SHOP_JUNGLE    = "assets/backgrounds/shop_jungle.webp"
+
+    CHARACTER_CORPSE          = "assets/corpse-transformed.webp"
+    CHARACTER_ARCHER          = "assets/characters/archer-transformed.webp"  
+    CHARACTER_ASSASSIN_RAPTOR = "assets/characters/assassinraptor-transformed.webp"
+    CHARACTER_CLUB            = "assets/characters/club-transformed.webp"
+    CHARACTER_CREST           = "assets/characters/crest-transformed.webp"
+    CHARACTER_HEALER          = "assets/characters/healer-transformed.webp"
+    CHARACTER_DILOPHMAGE      = "assets/characters/dilophmage-transformed.webp"
+    CHARACTER_PIKEMAN         = "assets/characters/pikeman-transformed.webp"
+    CHARACTER_PTERO           = "assets/characters/ptero-transformed.webp"
+    CHARACTER_SPINO           = "assets/characters/spino-transformed.webp"
+    CHARACTER_SUMMONER        = "assets/characters/summoner-transformed.webp"
+    CHARACTER_VELO            = "assets/characters/velo-transformed.webp"
+
+
+IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}

@@ -1,34 +1,28 @@
 import pygame
 from typing import Optional
-from settings import Vector, Color, WHITE_COLOR, DEFAULT_TEXT_SIZE
-from pygame import Surface, Rect, font, transform
+from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
+from pygame import Surface, Rect, font
+from images import ImageChoice, IMAGES
+from abc import ABC
 
 
-class Character:
+class Character(ABC):
     name: str = "Character"
     width_pixels: int = 100
     height_pixels: int = 100
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    target: set[int] = {1}
     ability_name: Optional[str] = None
     trigger: Optional[str] = None
+    character_image: ImageChoice
+    corpse_image = ImageChoice.CHARACTER_CORPSE
 
     def __init__(self, is_enemy: bool = False) -> None:
         self.health = self.max_health
         self.is_attacking = False
         self.is_defending = False
         self.is_enemy = is_enemy
-        self.image = None
-
-    def load_image(self) -> None:
-        """Load character image if not already loaded."""
-        if self.image is None and hasattr(self, 'image_path'):
-            self.image = pygame.image.load(self.image_path).convert_alpha()
-            if self.is_enemy:
-                self.image = pygame.transform.flip(self.image, True, False)
-            self.image = pygame.transform.scale(self.image, (self.width_pixels, self.height_pixels))
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
@@ -41,7 +35,7 @@ class Character:
 
 
 class Archeryptrx(Character):
-    #A simple archer with upfront damage and range
+    '''A simple archer with upfront damage and range'''
     name: str = "Archeryptrx"
     max_health: int = 3
     damage: int = 1
@@ -49,11 +43,11 @@ class Archeryptrx(Character):
     ability_name: Optional[str] = "Volley"
     ability_description: Optional[str] = "Combat start: 1 damage to 2 random enemies"
     trigger: Optional[str] = "combat_start"
-    image_path: str = "assets/characters/archer-transformed.webp"
+    character_image = ImageChoice.CHARACTER_ARCHER
 
 
 class Stabiraptor(Character):
-    #An assassin focussed on eliminating dangerous enemies
+    '''An assassin focussed on eliminating dangerous enemies'''
     name: str = "Stabiraptor"
     max_health: int = 3
     damage: int = 2
@@ -61,11 +55,11 @@ class Stabiraptor(Character):
     ability_name: Optional[str] = "Assassinate"
     ability_description: Optional[str] = "Combat start: 3 damage to highest attack enemy"
     trigger: Optional[str] = "combat_start"
-    image_path: str = "assets/characters/assassinraptor-transformed.webp"
+    character_image = ImageChoice.CHARACTER_ASSASSIN_RAPTOR
 
 
 class Tankylosaurus(Character):
-    #A tanky blocking unit that can absorb powerful attacks
+    '''A tanky blocking unit that can absorb powerful attacks'''
     name: str = "Ankylo"
     max_health: int = 7
     damage: int = 1
@@ -73,11 +67,11 @@ class Tankylosaurus(Character):
     ability_name: Optional[str] = "Solid"
     ability_description: Optional[str] = "Defending: Max 2 damage taken"
     trigger: Optional[str] = "defend"
-    image_path: str = "assets/characters/club-transformed.webp"
+    character_image = ImageChoice.CHARACTER_CLUB
 
 
 class Macedon(Character):
-    #a balanced fighter, can render enemies unable to attack
+    '''a balanced fighter, can render enemies unable to attack'''
     name: str = "Macedon"
     max_health: int = 4
     damage: int = 2
@@ -85,11 +79,11 @@ class Macedon(Character):
     ability_name: Optional[str] = "Crippling blow"
     ability_description: Optional[str] = "Attacking: reduce target attack by 1"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/crest-transformed.webp"
+    character_image = ImageChoice.CHARACTER_CREST
 
 
 class Healamimus(Character):
-    #A healer, helps sustain allies
+    '''A healer, helps sustain allies'''
     name: str = "Healamimus"
     max_health: int = 4
     damage: int = 1
@@ -97,11 +91,11 @@ class Healamimus(Character):
     ability_name: Optional[str] = "Heal"
     ability_description: Optional[str] = "Attacking: heal lowest health ally by 1"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/healer-transformed.webp"
+    character_image = ImageChoice.CHARACTER_HEALER
 
 
 class Dilophmageras(Character):
-    #A long range mage with a penetrating attack
+    '''A long range mage with a penetrating attack'''
     name: str = "Dilophmageras"
     max_health: int = 3
     damage: int = 2
@@ -109,11 +103,11 @@ class Dilophmageras(Character):
     ability_name: Optional[str] = "Blast"
     ability_description: Optional[str] = "Attacking: enemy behind takes 1 damage"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/dilophmage-transformed.webp"
+    character_image = ImageChoice.CHARACTER_DILOPHMAGE
 
 
 class Tripiketops(Character):
-    #A tanky unit that deals damage when atttacked
+    '''A tanky unit that deals damage when attacked'''
     name: str = "Tripiketops"
     max_health: int = 6
     damage: int = 1
@@ -121,12 +115,11 @@ class Tripiketops(Character):
     ability_name: Optional[str] = "Parry"
     ability_description: Optional[str] = "Defending: attacker takes 1 damage"
     trigger: Optional[str] = "defend"
-    image_path: str = "assets/characters/pikeman-transformed.webp"
-
+    character_image = ImageChoice.CHARACTER_PIKEMAN
 
 
 class Pterapike(Character):
-    #A versatile unit that targets the enemies back units
+    '''A versatile unit that targets the enemies back units'''
     name: str = "Pterapike"
     max_health: int = 4
     damage: int = 1
@@ -134,10 +127,11 @@ class Pterapike(Character):
     ability_name: Optional[str] = "Flying"
     ability_description: Optional[str] = "Attacking: can always target last enemy"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/ptero-transformed.webp"
+    character_image = ImageChoice.CHARACTER_PTERO
+
 
 class Spinoswordaus(Character):
-    #A powerful warrior that becomes lethal as the battle progresses
+    '''A powerful warrior that becomes lethal as the battle progresses'''
     name: str = "Spinoswordaus"
     max_health: int = 6
     damage: int = 1
@@ -145,11 +139,11 @@ class Spinoswordaus(Character):
     ability_name: Optional[str] = "Rampage"
     ability_description: Optional[str] = "Attacking: gain 1 attack"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/spino-transformed.webp"
+    character_image = ImageChoice.CHARACTER_SPINO
 
 
 class Ateratops(Character):
-    #A mage that enhances allied health
+    '''A mage that enhances allied health'''
     name: str = "Ateratops"
     max_health: int = 3
     damage: int = 2
@@ -157,11 +151,11 @@ class Ateratops(Character):
     ability_name: Optional[str] = "Fortify"
     ability_description: Optional[str] = "Combat start: allies gain 1 health"
     trigger: Optional[str] = "combat_start"
-    image_path: str = "assets/characters/summoner-transformed.webp"
+    character_image = ImageChoice.CHARACTER_SUMMONER
 
 
 class Velocirougue(Character):
-    #a dual weilding rouge, high damage but hurts self on attack, relies on quick victory
+    '''a dual weilding rouge, high damage but hurts self on attack, relies on quick victory'''
     name: str = "Velocirougue"
     max_health: int = 5
     damage: int = 3
@@ -169,7 +163,7 @@ class Velocirougue(Character):
     ability_name: Optional[str] = "Reckless"
     ability_description: Optional[str] = "Attacking: lose 1 health"
     trigger: Optional[str] = "attack"
-    image_path: str = "assets/characters/velo-transformed.webp"
+    character_image = ImageChoice.CHARACTER_VELO
 
 
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
@@ -183,8 +177,15 @@ def draw_text(text_content: str, window: Surface, center_position: Vector, scale
 
 
 def draw_character(frame: Surface, mid_bottom: Vector, character: Character, scale_ratio: float = 1):
-    # Load the image if it's not already loaded
-    character.load_image()
+    match character.is_dead():
+        case True: 
+            character_image = IMAGES[character.corpse_image].convert_alpha()
+        case False:
+            character_image = IMAGES[character.character_image].convert_alpha()
+    
+    character_image = pygame.transform.scale(character_image, (character.width_pixels, character.height_pixels))
+    if character.is_enemy:
+        character_image = pygame.transform.flip(character_image, True, False)
 
     center_x, bottom_y = mid_bottom
     top_left = (center_x - character.width_pixels / 2, bottom_y - character.height_pixels)
@@ -196,23 +197,17 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, sca
     # Draw character name
     draw_text(character.name, frame, mid_top, scale_ratio=scale_ratio)
 
-    if character.health == 0:
-        # Draw character corpse image
-        CHARACTER_IMAGE = pygame.image.load("assets/corpse-transformed.webp").convert_alpha()
-        if character.is_enemy:
-            CHARACTER_IMAGE = pygame.transform.flip(CHARACTER_IMAGE, True, False)
-        CHARACTER_IMAGE = pygame.transform.scale(CHARACTER_IMAGE, (rect.width, rect.height))
-        frame.blit(CHARACTER_IMAGE, rect.topleft)
+    frame.blit(character_image, rect.topleft)
+
+
+    if character.is_dead():
         draw_text(f"DEAD", frame, mid_bottom, scale_ratio=scale_ratio)
     else:
-        # Draw character image from preloaded one
-        frame.blit(character.image, rect.topleft)
-
         # Draw defending indicator if character is defending
         if character.is_defending:
             red_circle_radius = rect.width // 2
             red_circle_center = (rect.centerx, rect.centery)
-            pygame.draw.circle(frame, (255, 0, 0), red_circle_center, red_circle_radius, width=5)
+            pygame.draw.circle(frame, RED_COLOR, red_circle_center, red_circle_radius, width=5)
 
         # Draw health and damage text
         health_damage_pos = (mid_bottom[0], mid_bottom[1] + 20)

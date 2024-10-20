@@ -3,11 +3,9 @@ sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
 
 from input_listener import PygameInputListener
 from engine import PygameEngine
-from renderer import PygameRenderer
 
 from character import *
-from character_slot import CharacterSlot, draw_slot
-from interactable import Button, draw_button
+from character_slot import CharacterSlot
 from combat_state import CombatState
 from preparation_state import PreparationState
 from shop_state import ShopState, ShopRenderer

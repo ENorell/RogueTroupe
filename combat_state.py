@@ -6,10 +6,9 @@ from state_machine import State, StateChoice
 from interactable import Button, draw_button, draw_text
 from renderer import PygameRenderer
 from typing import Optional
-from pygame import image, transform, font
+from pygame import transform, font
+from images import IMAGES, ImageChoice
 import logging
-
-COMBAT_BACKGROUND_IMAGE_PATH = 'assets/backgrounds/combat_jungle.webp'
 
 
 class Delay:
@@ -120,7 +119,6 @@ class BattleRound:
                 slots[i].content = character
 
 def revive_ally_characters(slots: list[CharacterSlot]) -> None:
-    logging.debug(f"Attempting to revive characters in {len(slots)} slots")
     for slot in slots:
         if slot.content:
             slot.content.revive()
@@ -137,7 +135,6 @@ class CombatState(State):
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
         self.battle_log: list[str] = []
-        self.current_round: Optional[BattleRound] = None
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
@@ -167,8 +164,8 @@ class CombatState(State):
             self.start_new_round()
 
 
-class CombatRenderer(PygameRenderer):
-    background_image = transform.scale(image.load(COMBAT_BACKGROUND_IMAGE_PATH), (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+class CombatRenderer(PygameRenderer): 
+    background_image = transform.scale( IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, combat_state: CombatState) -> None:
         self.frame.blit(self.background_image, (0, 0))
