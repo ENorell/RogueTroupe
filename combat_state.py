@@ -154,7 +154,7 @@ class CombatState(State):
         self.continue_button.refresh(user_input.mouse_position)
 
         if self.is_combat_concluded():
-            if self.continue_button.is_hovered and user_input.is_mouse1_up:
+            if (self.continue_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
                 logging.debug("Continue button clicked, switching states")
                 revive_ally_characters(self.ally_slots)
                 self.next_state = StateChoice.SHOP

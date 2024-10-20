@@ -38,7 +38,7 @@ class PreparationState(State):
             slot.refresh(user_input.mouse_position)
 
         self.continue_button.refresh(user_input.mouse_position)
-        if self.continue_button.is_hovered and user_input.is_mouse1_up:
+        if (self.continue_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
             self.next_state = StateChoice.BATTLE
             logging.debug("Continue button clicked, switching states")
 
