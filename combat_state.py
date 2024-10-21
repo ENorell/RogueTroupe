@@ -57,7 +57,12 @@ class BasicAttack:
         self.victim: Optional[Character] = None
 
     def activate(self, attacker: Character) -> None:
-        assert self.victim
+        if not self.victim: 
+            self.is_done
+            logging.debug(f"{attacker.name} has no target to attack (range {attacker.range}).")
+            return
+        #assert self.victim
+        
         self.victim.damage_health(attacker.damage)
         self.victim.is_defending = False
 
@@ -88,7 +93,7 @@ class BasicAttack:
         return bool(self.victim)
 
 
-class BattleTurn:
+class BattleTurn_:
     def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
         self.acting_slot = acting_slot
         assert acting_slot.content # We should never be here if it was empty
@@ -144,7 +149,76 @@ class BattleTurn:
             return
         
         self.end_turn()
+
+
+def trigger_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType):
+    for slot in ally_slots + enemy_slots:
+        if not slot.content: continue
+        if     slot.content.is_dead(): continue
+        if not slot.content.ability: continue 
+        if not slot.content.ability.trigger == trigger_type: continue
+        #if     slot.content.ability.is_done: continue
+
+        yield slot.content.ability.activate(slot.content, ally_slots, enemy_slots)
+        yield from time_delay(TURN_ATTACK_DELAY_TIME_S)
+
+def time_delay(seconds):
+    frame_counter = 0
+    #logging.debug(f"wait {seconds} seconds")
+    while frame_counter / GAME_FPS < seconds:
+        frame_counter += 1
+        yield
+    #logging.debug("Done waiting")
+
+
+class BattleTurn:
+    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.acting_slot = acting_slot
+        assert acting_slot.content # We should never be here if it was empty
+        self.character: Character = acting_slot.content
+        
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
+
+        self.basic_attack = BasicAttack(acting_slot, ally_slots, enemy_slots)
+
+        self.is_done = False
+
+        self.phases = self.turn_phases(self.basic_attack, self.character)
+
+    def turn_phases(self, basic_attack: BasicAttack, character: Character):
+        yield from trigger_abilities(self.ally_slots, self.enemy_slots, TriggerType.TURN_START)
+        yield from time_delay(TURN_ATTACK_DELAY_TIME_S)
+        yield basic_attack.determine_target(character)
+        yield from time_delay(TURN_ATTACK_DELAY_TIME_S)
+        yield basic_attack.activate(character)
+        yield from time_delay(TURN_ATTACK_DELAY_TIME_S)
+
+    def start_turn(self) -> None:
+        logging.debug(f"Starting turn for {self.character.name} {"(Ally)" if self.acting_slot in self.ally_slots else "(Enemy)"}")
+
+        if self.character.is_dead():
+            logging.debug(f"{self.character.name} is dead, skipping turn")
+            self.end_turn()
+            return
+        
+
+    def end_turn(self) -> None:
+        self.character.refresh_ability()
+        # Potential end of turn effects
+        self.is_done = True
+
+    def loop(self) -> None:
+        try:
+            next(self.phases)
+        except StopIteration:
+            self.end_turn()
             
+
+def loop_until_done(turn: BattleTurn):
+    while not turn.is_done:
+        turn.loop()
+        yield
 
 
 class BattleRound:
@@ -152,14 +226,17 @@ class BattleRound:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.turn_order = []
-        self.current_turn: Optional[BattleTurn] = None
-        self.round_end_delay = Delay(1.5)
+        #self.current_turn: Optional[BattleTurn] = None
         self.is_done = False
 
-    #def setup_turn_order(self) -> None:
-    #    ally_turns = [BattleTurn(slot.content, i, self.ally_slots, self.enemy_slots, self.battle_log) for i, slot in enumerate(self.ally_slots) if slot.content and not slot.content.is_dead()]
-    #    enemy_turns = [BattleTurn(slot.content, i, self.enemy_slots, self.ally_slots, self.battle_log) for i, slot in enumerate(self.enemy_slots) if slot.content and not slot.content.is_dead()]
-    #    self.turn_order = [turn for pair in zip(ally_turns, enemy_turns) for turn in pair] + ally_turns[len(enemy_turns):] + enemy_turns[len(ally_turns):]
+        self.phases = self.round_phases()
+
+    def round_phases(self):
+        yield from trigger_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START)
+        while True:
+            yield self.start_next_turn()
+            yield from loop_until_done(self.current_turn)
+
 
     def start_round(self) -> None:
         self.slot_turn_order: list[CombatSlot] = [slot for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead() ]
@@ -179,10 +256,6 @@ class BattleRound:
         self.current_turn.start_turn()
 
     def end_round(self) -> None:
-        if not self.round_end_delay.is_done:
-            self.round_end_delay.tick()
-            return
-
         self.cleanup_dead_units()  # Clean up dead units at the end of the round
         self.shift_units_forward()  # Shift units forward to fill empty slots
         self.is_done = True
@@ -210,16 +283,10 @@ class BattleRound:
                 slots[i].content = character
 
     def loop(self) -> None:
-        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START):
-            return
-
-        assert self.current_turn # Something is wrong if we have gotten here with no turn
-        
-        if not self.current_turn.is_done:
-            self.current_turn.loop()
-            return
-
-        self.start_next_turn()
+        try:
+            next(self.phases)
+        except StopIteration:
+            self.end_round()
 
 
 def revive_ally_characters(slots: list[CombatSlot]) -> None:
