@@ -59,7 +59,7 @@ class BattleTurn:
         if self.post_attack_phase:
             if self.post_attack_delay.is_done:
                 if self.character.ability and self.character.ability.trigger == "attack":
-                    self.character.ability.activate(self.character, self.attacker_slots, self.defender_slots)
+                    self.character.ability.activate(self.character, self.attacker_slots, self.defender_slots, self.target_character)
                     self.battle_log.append(f"{self.character.name} uses {self.character.ability.name}!")
                 self.post_attack_phase = False
                 self.is_done = True
@@ -72,12 +72,15 @@ class BattleTurn:
                 self.battle_log.append(log_message)
                 logging.debug(log_message)
                 self.target_character.is_defending = False
-                self.post_attack_phase = True
+                
             else:
                 log_message = f"{self.character.name} has no target to attack."
                 self.battle_log.append(log_message)
                 logging.debug(log_message)
-                self.is_done = True
+                
+
+            #attack abilities can trigger without a valid target
+            self.post_attack_phase = True
         else:
             self.delay.tick()
 
@@ -99,10 +102,18 @@ class BattleRound:
     def setup_combat_start_abilities(self) -> None:
         # Activate abilities triggered at combat start
         if not self.combat_start_abilities_triggered:
-            for slot in self.ally_slots + self.enemy_slots:
+
+            
+            for slot in self.ally_slots:
                 if slot.content and slot.content.ability and slot.content.ability.trigger == "combat_start":
                     slot.content.ability.activate(slot.content, self.ally_slots, self.enemy_slots)
                     self.battle_log.append(f"{slot.content.name} uses {slot.content.ability.name}!")
+
+            for slot in self.enemy_slots:
+                if slot.content and slot.content.ability and slot.content.ability.trigger == "combat_start":
+                    slot.content.ability.activate(slot.content,  self.enemy_slots, self.ally_slots,)
+                    self.battle_log.append(f"{slot.content.name} uses {slot.content.ability.name}!")
+
             self.combat_start_abilities_triggered = True
 
     def setup_turn_order(self) -> None:
