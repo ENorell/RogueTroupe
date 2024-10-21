@@ -34,8 +34,10 @@ def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: 
 
 
 def solid(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Limits the maximum damage taken to 2 when defending."""
-    # TODO
+    """Heals when attacked."""
+    target_character.health += 1
+
+    logging.debug(f"{target_character.name}'s heals self.")
 
 def crippling_blow(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
     """Reduces enemy attack by 1 down to 0 min"""
@@ -44,7 +46,7 @@ def crippling_blow(character: "Character", allies: list["CharacterSlot"], enemie
 
 def heal(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
     """Heals the lowest health ally by 1 when attacking."""
-    valid_targets = [slot.content for slot in allies if slot.content and not slot.content.is_dead()]
+    valid_targets = [slot.content for slot in allies if slot.content and not slot.content.is_dead() and slot.content.health < slot.content.max_health]
     if valid_targets:
         lowest_health_ally = min(valid_targets, key=lambda ally: ally.health)
         lowest_health_ally.health = min(lowest_health_ally.health + 1, lowest_health_ally.max_health)
@@ -63,7 +65,9 @@ def blast(character: "Character", allies: list["CharacterSlot"], enemies: list["
 
 def parry(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
     """Deals 1 damage to the attacker when defending."""
-    # TODO
+    character.damage_health(1)
+    logging.debug(f"{target_character.name} parries, dealing 1 damage to {character.name}")
+
 
 def flying(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
     """Allows the character to always target the last enemy when attacking."""
@@ -79,14 +83,17 @@ def flying(character: "Character", allies: list["CharacterSlot"], enemies: list[
 
 
 def rampage(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Gains 1 attack when attacking."""
-    character.damage += 1
-    logging.debug(f"{character.name} uses Rampage, gaining 1 attack.")
+    """Gains 1 attack when attacking target."""
+
+    if target_character:
+        character.damage += 1
+        logging.debug(f"{character.name} uses Rampage, gaining 1 attack.")
 
 def fortify(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
     """Increases all allies' health by 1 at the start of combat."""
     for slot in allies:
         slot.content.health += 1
+    logging.debug(f"{character.name} uses fortify to give allies 1 extra health.")
 
 
 def reckless(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:

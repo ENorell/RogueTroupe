@@ -61,6 +61,10 @@ class BattleTurn:
                 if self.character.ability and self.character.ability.trigger == "attack":
                     self.character.ability.activate(self.character, self.attacker_slots, self.defender_slots, self.target_character)
                     self.battle_log.append(f"{self.character.name} uses {self.character.ability.name}!")
+
+                if self.target_character and self.target_character.ability and self.target_character.ability.trigger == "defend":
+                    self.target_character.ability.activate(self.character, self.attacker_slots, self.defender_slots, self.target_character)
+                    self.battle_log.append(f"{self.target_character.name} uses {self.target_character.ability.name}!")
                 self.post_attack_phase = False
                 self.is_done = True
             else:
