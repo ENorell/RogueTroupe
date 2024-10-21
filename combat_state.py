@@ -11,7 +11,7 @@ from images import IMAGES, ImageChoice
 import logging
 
 
-TURN_ATTACK_DELAY_TIME_S: Final[float] = 0.5
+TURN_ATTACK_DELAY_TIME_S: Final[float] = 1
 CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
 
@@ -45,6 +45,8 @@ class BattleTurn:
         self.delay = Delay(TURN_ATTACK_DELAY_TIME_S)
         self.is_done = False
         self.target_character: Optional[Character] = None
+        self.post_attack_delay = Delay(1.0)  # Delay after attack or ability
+        self.post_attack_phase = False
 
     def determine_target(self) -> Optional[Character]:
         defender_slots = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
@@ -100,13 +102,38 @@ class BattleTurn:
 
 
 class BattleRound:
-    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], battle_log: list[str]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], battle_log: list[str], combat_start_abilities_triggered: bool = False) -> None:
         self.battle_log = battle_log
         self.is_done = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
+        self.turn_order = []
+        self.current_turn: Optional[BattleTurn] = None
+        self.round_end_delay = Delay(1.5)  # Delay after round ends
+        self.round_end_phase = False
+        self.ally_turn = True
+        self.combat_start_abilities_triggered = combat_start_abilities_triggered
+
+        self.setup_turn_order()
+
+    def setup_combat_start_abilities(self) -> None:
+        # Activate abilities triggered at combat start
+        if not self.combat_start_abilities_triggered:
+            for slot in self.ally_slots + self.enemy_slots:
+                if slot.content and slot.content.ability and slot.content.ability.trigger == "combat_start":
+                    slot.content.ability.activate(slot.content, self.ally_slots, self.enemy_slots)
+                    self.battle_log.append(f"{slot.content.name} uses {slot.content.ability.name}!")
+            self.combat_start_abilities_triggered = True
+
+    def setup_turn_order(self) -> None:
+        ally_turns = [BattleTurn(slot.content, i, self.ally_slots, self.enemy_slots, self.battle_log) for i, slot in enumerate(self.ally_slots) if slot.content and not slot.content.is_dead()]
+        enemy_turns = [BattleTurn(slot.content, i, self.enemy_slots, self.ally_slots, self.battle_log) for i, slot in enumerate(self.enemy_slots) if slot.content and not slot.content.is_dead()]
+        self.turn_order = [turn for pair in zip(ally_turns, enemy_turns) for turn in pair] + ally_turns[len(enemy_turns):] + enemy_turns[len(ally_turns):]
 
     def start_round(self) -> None:
+        if not self.combat_start_abilities_triggered:
+            self.setup_combat_start_abilities()
+        
         self.slot_turn_order: list[CombatSlot] = [slot for slot in self.ally_slots + self.enemy_slots if slot.content and not slot.content.is_dead() ]
         
         self.start_next_turn()
@@ -142,6 +169,7 @@ class BattleRound:
         for slot in self.ally_slots + self.enemy_slots:
             if slot.content and slot.content.is_dead():
                 character_name = slot.content.name  # Store the character's name before removing
+                logging.debug(f"Removing {character_name} from battlefield as they are dead.")
                 self.battle_log.append(f"{character_name} has been removed from the battlefield due to being defeated.")
                 slot.content = None
 
@@ -158,6 +186,11 @@ class BattleRound:
             # Fill the slots with non-empty characters
             for i, character in enumerate(non_empty_slots):
                 slots[i].content = character
+
+    @property
+    def is_done(self) -> bool:
+        return not self.turn_order and (not self.current_turn or self.current_turn.is_done)
+
 
 def revive_ally_characters(slots: list[CombatSlot]) -> None:
     for slot in slots:
@@ -176,6 +209,7 @@ class CombatState(State):
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
         self.battle_log: list[str] = []
+        self.combat_start_abilities_triggered = False
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
@@ -185,7 +219,10 @@ class CombatState(State):
     def start_new_round(self) -> None:
         self.round_counter += 1
         logging.info(f"Starting Round {self.round_counter}")
-        self.current_round = BattleRound(self.ally_slots, self.enemy_slots, self.battle_log)
+        self.current_round = BattleRound(self.ally_slots, self.enemy_slots, self.battle_log, self.combat_start_abilities_triggered)
+        if not self.combat_start_abilities_triggered:
+            self.current_round.setup_combat_start_abilities()
+            self.combat_start_abilities_triggered = True
         self.current_round.start_round()
 
     def is_combat_concluded(self) -> bool:
@@ -209,7 +246,7 @@ class CombatState(State):
 
 
 class CombatRenderer(PygameRenderer): 
-    background_image = transform.scale( IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+    background_image = transform.scale(IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, combat_state: CombatState) -> None:
         self.frame.blit(self.background_image, (0, 0))

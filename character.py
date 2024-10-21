@@ -4,6 +4,7 @@ from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
 from pygame import Surface, Rect, font
 from images import ImageChoice, IMAGES
 from abc import ABC
+from abilities import Ability, volley, assassinate, solid, crippling_blow, heal, blast, parry, flying, rampage, fortify, reckless
 
 
 class Character(ABC):
@@ -13,8 +14,7 @@ class Character(ABC):
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    ability_name: Optional[str] = None
-    trigger: Optional[str] = None
+    ability: Optional[Ability] = None
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
@@ -22,6 +22,8 @@ class Character(ABC):
         self.health = self.max_health
         self.is_attacking = False
         self.is_defending = False
+        self.target = None
+        self.attacker = None
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
@@ -39,10 +41,16 @@ class Archeryptrx(Character):
     max_health: int = 3
     damage: int = 1
     range: int = 2
-    ability_name: Optional[str] = "Volley"
-    ability_description: Optional[str] = "Combat start: 1 damage to 2 random enemies"
-    trigger: Optional[str] = "combat_start"
     character_image = ImageChoice.CHARACTER_ARCHER
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Volley",
+            description="Combat start: 1 damage to 2 random enemies",
+            trigger="combat_start",
+            action=volley
+        )
 
 
 class Stabiraptor(Character):
@@ -51,10 +59,16 @@ class Stabiraptor(Character):
     max_health: int = 3
     damage: int = 2
     range: int = 1
-    ability_name: Optional[str] = "Assassinate"
-    ability_description: Optional[str] = "Combat start: 3 damage to highest attack enemy"
-    trigger: Optional[str] = "combat_start"
     character_image = ImageChoice.CHARACTER_ASSASSIN_RAPTOR
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Assassinate",
+            description="Combat start: 3 damage to highest attack enemy",
+            trigger="combat_start",
+            action=assassinate
+        )
 
 
 class Tankylosaurus(Character):
@@ -63,10 +77,16 @@ class Tankylosaurus(Character):
     max_health: int = 7
     damage: int = 1
     range: int = 1
-    ability_name: Optional[str] = "Solid"
-    ability_description: Optional[str] = "Defending: Max 2 damage taken"
-    trigger: Optional[str] = "defend"
     character_image = ImageChoice.CHARACTER_CLUB
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Solid",
+            description="Defending: Max 2 damage taken",
+            trigger="defend",
+            action=solid
+        )
 
 
 class Macedon(Character):
@@ -75,10 +95,16 @@ class Macedon(Character):
     max_health: int = 4
     damage: int = 2
     range: int = 1
-    ability_name: Optional[str] = "Crippling blow"
-    ability_description: Optional[str] = "Attacking: reduce target attack by 1"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_CREST
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Crippling blow",
+            description="Attacking: reduce target attack by 1",
+            trigger="attack",
+            action=crippling_blow
+        )
 
 
 class Healamimus(Character):
@@ -87,10 +113,16 @@ class Healamimus(Character):
     max_health: int = 4
     damage: int = 1
     range: int = 2
-    ability_name: Optional[str] = "Heal"
-    ability_description: Optional[str] = "Attacking: heal lowest health ally by 1"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_HEALER
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Heal",
+            description="Attacking: heal lowest health ally by 1",
+            trigger="attack",
+            action=heal
+        )
 
 
 class Dilophmageras(Character):
@@ -99,10 +131,16 @@ class Dilophmageras(Character):
     max_health: int = 3
     damage: int = 2
     range: int = 3
-    ability_name: Optional[str] = "Blast"
-    ability_description: Optional[str] = "Attacking: enemy behind takes 1 damage"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Blast",
+            description="Attacking: enemy behind takes 1 damage",
+            trigger="attack",
+            action=blast
+        )
 
 
 class Tripiketops(Character):
@@ -111,10 +149,16 @@ class Tripiketops(Character):
     max_health: int = 6
     damage: int = 1
     range: int = 1
-    ability_name: Optional[str] = "Parry"
-    ability_description: Optional[str] = "Defending: attacker takes 1 damage"
-    trigger: Optional[str] = "defend"
     character_image = ImageChoice.CHARACTER_PIKEMAN
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Parry",
+            description="Defending: attacker takes 1 damage",
+            trigger="defend",
+            action=parry
+        )
 
 
 class Pterapike(Character):
@@ -123,10 +167,16 @@ class Pterapike(Character):
     max_health: int = 4
     damage: int = 1
     range: int = 0
-    ability_name: Optional[str] = "Flying"
-    ability_description: Optional[str] = "Attacking: can always target last enemy"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_PTERO
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Flying",
+            description="Attacking: can always target last enemy",
+            trigger="attack",
+            action=flying
+        )
 
 
 class Spinoswordaus(Character):
@@ -135,10 +185,16 @@ class Spinoswordaus(Character):
     max_health: int = 6
     damage: int = 1
     range: int = 1
-    ability_name: Optional[str] = "Rampage"
-    ability_description: Optional[str] = "Attacking: gain 1 attack"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_SPINO
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Rampage",
+            description="Attacking: gain 1 attack",
+            trigger="attack",
+            action=rampage
+        )
 
 
 class Ateratops(Character):
@@ -147,22 +203,35 @@ class Ateratops(Character):
     max_health: int = 3
     damage: int = 2
     range: int = 1  # Melee range
-    ability_name: Optional[str] = "Fortify"
-    ability_description: Optional[str] = "Combat start: allies gain 1 health"
-    trigger: Optional[str] = "combat_start"
     character_image = ImageChoice.CHARACTER_SUMMONER
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Fortify",
+            description="Combat start: allies gain 1 health",
+            trigger="combat_start",
+            action=fortify
+        )
 
 
 class Velocirougue(Character):
-    '''a dual weilding rouge, high damage but hurts self on attack, relies on quick victory'''
+    '''a dual wielding rogue, high damage but hurts self on attack, relies on quick victory'''
     name: str = "Velocirougue"
     max_health: int = 5
     damage: int = 3
     range: int = 1
-    ability_name: Optional[str] = "Reckless"
-    ability_description: Optional[str] = "Attacking: lose 1 health"
-    trigger: Optional[str] = "attack"
     character_image = ImageChoice.CHARACTER_VELO
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.ability = Ability(
+            name="Reckless",
+            description="Attacking: lose 1 health",
+            trigger="attack",
+            action=reckless
+        )
+
 
 
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
