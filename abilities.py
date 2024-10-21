@@ -46,7 +46,7 @@ class Ability:
 
 
 class Rampage(Ability):
-    name: str = "Ramapage"
+    name: str = "Rampage"
     description: str = "Attacking: gain 1 attack"
     trigger = TriggerType.TURN_START
 
@@ -101,7 +101,7 @@ class Heal(Ability):
 
 
 class Reckless(Ability):
-    name: str = "Heal"
+    name: str = "Reckless"
     description: str = "Loses 1 health when attacking."
     trigger = TriggerType.TURN_START
     damage: int = 1

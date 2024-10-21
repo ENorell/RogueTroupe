@@ -115,6 +115,7 @@ class BattleTurn:
         self.basic_attack.determine_target(self.character)
 
     def end_turn(self) -> None:
+        self.character.refresh_ability()
         # Potential end of turn effects
         self.is_done = True
 

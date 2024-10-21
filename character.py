@@ -40,6 +40,10 @@ class Character(ABC):
     def revive(self) -> None:
         self.health = self.max_health
 
+    def refresh_ability(self) -> None:
+        if not self.ability: return
+        self.ability.is_done = False
+
 
 class Archeryptrx(Character):
     '''A simple archer with upfront damage and range'''
