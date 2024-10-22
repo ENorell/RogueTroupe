@@ -185,7 +185,6 @@ class Reckless(Ability):
         self.is_done = True
 
 
-
 #def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
 #    """Deals 3 damage to the highest attack enemy at the start of combat."""
 #    #TO FIX
