@@ -1,9 +1,9 @@
-from pygame import display, time, Surface
+from pygame import display, time
 from typing import Final
 from interfaces import Renderer, Loopable
-from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Color
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME
 
-from pygame import display, image, transform
+from pygame import display
 from typing import Final
 from interfaces import Renderer, Loopable
 from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME

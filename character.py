@@ -4,7 +4,7 @@ from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
 from pygame import Surface, Rect, font
 from images import ImageChoice, IMAGES
 from abc import ABC
-from abilities import Ability, volley, assassinate, solid, crippling_blow, heal, blast, parry, flying, rampage, fortify, reckless
+from abilities import *
 
 
 class Character(ABC):
@@ -14,26 +14,37 @@ class Character(ABC):
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    ability: Optional[Ability] = None
+    ability_type: Optional[type[Ability]] = None # Wait with instantiation until initializer due to mutability
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
-    def __init__(self, is_enemy: bool = False) -> None:
+    def __init__(self) -> None:
         self.health = self.max_health
         self.is_attacking = False
         self.is_defending = False
-        self.is_enemy = is_enemy
         self.target = None
         self.attacker = None
+        self.ability: Optional[Ability] = self.ability_type() if self.ability_type else None
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
+        if self.health == 0: logging.debug(f"{self.name} died")
 
     def is_dead(self) -> bool:
         return self.health == 0
+    
+    def restore_health(self, healing: int) -> None:
+        self.health = min(self.health + healing, self.max_health)
+
+    def is_full_health(self) -> bool:
+        return self.health == self.max_health
 
     def revive(self) -> None:
         self.health = self.max_health
+
+    def refresh_ability(self) -> None:
+        if not self.ability: return
+        self.ability.is_done = False
 
 
 class Archeryptrx(Character):
@@ -43,16 +54,7 @@ class Archeryptrx(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_ARCHER
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Volley",
-            description="Combat start: 1 damage to 2 random enemies",
-            trigger="combat_start",
-            action=volley
-        )
-
+    ability_type: Optional[type[Ability]] = Volley
 
 class Stabiraptor(Character):
     '''An assassin focussed on eliminating dangerous enemies'''
@@ -61,15 +63,7 @@ class Stabiraptor(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_ASSASSIN_RAPTOR
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Assassinate",
-            description="Combat start: 3 damage to highest attack enemy",
-            trigger="combat_start",
-            action=assassinate
-        )
+    ability_type: Optional[type[Ability]] = None
 
 
 class Tankylosaurus(Character):
@@ -79,15 +73,7 @@ class Tankylosaurus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_CLUB
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Solid",
-            description="Defending: Max 2 damage taken",
-            trigger="defend",
-            action=solid
-        )
+    ability_type: Optional[type[Ability]] = None
 
 
 class Macedon(Character):
@@ -97,15 +83,7 @@ class Macedon(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_CREST
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Crippling blow",
-            description="Attacking: reduce target attack by 1",
-            trigger="attack",
-            action=crippling_blow
-        )
+    ability_type: Optional[type[Ability]] = None
 
 
 class Healamimus(Character):
@@ -115,15 +93,7 @@ class Healamimus(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_HEALER
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Heal",
-            description="Attacking: heal lowest health ally by 1",
-            trigger="attack",
-            action=heal
-        )
+    ability_type: Optional[type[Ability]] = Heal
 
 
 class Dilophmageras(Character):
@@ -133,15 +103,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Blast",
-            description="Attacking: enemy behind takes 1 damage",
-            trigger="attack",
-            action=blast
-        )
+    ability_type: Optional[type[Ability]] = None
 
 
 class Tripiketops(Character):
@@ -151,15 +113,7 @@ class Tripiketops(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_PIKEMAN
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Parry",
-            description="Defending: attacker takes 1 damage",
-            trigger="defend",
-            action=parry
-        )
+    ability_type: Optional[type[Ability]] = None
 
 
 class Pterapike(Character):
@@ -169,16 +123,7 @@ class Pterapike(Character):
     damage: int = 1
     range: int = 0
     character_image = ImageChoice.CHARACTER_PTERO
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Flying",
-            description="Attacking: can always target last enemy",
-            trigger="attack",
-            action=flying
-        )
-
+    ability_type: Optional[type[Ability]] = None
 
 class Spinoswordaus(Character):
     '''A powerful warrior that becomes lethal as the battle progresses'''
@@ -187,16 +132,7 @@ class Spinoswordaus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_SPINO
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Rampage",
-            description="Attacking: gain 1 attack",
-            trigger="attack",
-            action=rampage
-        )
-
+    ability_type: Optional[type[Ability]] = Rampage
 
 class Ateratops(Character):
     '''A mage that enhances allied health'''
@@ -205,16 +141,7 @@ class Ateratops(Character):
     damage: int = 2
     range: int = 1  # Melee range
     character_image = ImageChoice.CHARACTER_SUMMONER
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Fortify",
-            description="Combat start: allies gain 1 health",
-            trigger="combat_start",
-            action=fortify
-        )
-
+    ability_type: Optional[type[Ability]] = None
 
 class Velocirougue(Character):
     '''a dual wielding rogue, high damage but hurts self on attack, relies on quick victory'''
@@ -223,16 +150,7 @@ class Velocirougue(Character):
     damage: int = 3
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
-
-    def __init__(self, is_enemy: bool = False) -> None:
-        super().__init__(is_enemy)
-        self.ability = Ability(
-            name="Reckless",
-            description="Attacking: lose 1 health",
-            trigger="attack",
-            action=reckless
-        )
-
+    ability_type: Optional[type[Ability]] = Reckless
 
 
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
@@ -245,21 +163,21 @@ def draw_text(text_content: str, window: Surface, center_position: Vector, scale
     window.blit(text, text_topleft_position)
 
 
-def draw_character(frame: Surface, mid_bottom: Vector, character: Character, scale_ratio: float = 1):
+def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_enemy: bool = False, scale_ratio: float = 1):
     match character.is_dead():
         case True: 
             character_image = IMAGES[character.corpse_image].convert_alpha()
         case False:
             character_image = IMAGES[character.character_image].convert_alpha()
-    
-    character_image = pygame.transform.scale(character_image, (character.width_pixels, character.height_pixels))
-    if character.is_enemy:
-        character_image = pygame.transform.flip(character_image, True, False)
 
     center_x, bottom_y = mid_bottom
     top_left = (center_x - character.width_pixels / 2, bottom_y - character.height_pixels)
     rect = Rect(top_left, (character.width_pixels, character.height_pixels))
     rect = rect.scale_by(scale_ratio, scale_ratio)
+
+    character_image = pygame.transform.scale(character_image, rect.size)
+    if is_enemy:
+        character_image = pygame.transform.flip(character_image, True, False)
 
     mid_top = (center_x, bottom_y - character.height_pixels)
 

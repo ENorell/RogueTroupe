@@ -1,102 +1,224 @@
-from typing import Callable, Optional
+from typing import Optional, Protocol, Sequence
 import random
-from logger import logging
+from enum import Enum, auto
+from abc import ABC, abstractmethod
+import logging
+from settings import GAME_FPS
 
-class Ability:
-    def __init__(self, name: str, description: str, trigger: str, action: Callable[["Character", list["CharacterSlot"], list["CharacterSlot"], Optional["Character"]], None]) -> None:
-        self.name = name
-        self.description = description
-        self.trigger = trigger
-        self.action = action
 
-    def activate(self, character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-        self.action(character, allies, enemies, target_character)
+class CharacterInterface(Protocol): # Put an interface to avoid circular imports
+    damage: int
+    name: str
+    range: int
+    is_defending: bool
+
+    def damage_health(self, damage: int) -> None:
+        ...
+    def restore_health(self, healing: int) -> None:
+        ...
+    def is_dead(self) -> bool:
+        ...
+    def is_full_health(self) -> bool:
+        ...
     
-# Ability Actions
+    @property
+    def health(self) -> int:
+        ...
 
-def volley(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Deals 1 damage to 2 random enemies at the start of combat."""
-    valid_targets = [slot.content for slot in enemies if slot.content and not slot.content.is_dead()]
-    if valid_targets:
-        for _ in range(2):
-            if valid_targets:
-                target = random.choice(valid_targets)
-                target.damage_health(1)
-                logging.debug(f"{character.name} uses Volley on {target.name}, dealing 1 damage.")
+class SlotInterface(Protocol):
+    coordinate: int
 
-def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Deals 3 damage to the highest attack enemy at the start of combat."""
-    valid_targets = [slot.content for slot in enemies if slot.content and not slot.content.is_dead()]
-    if valid_targets:
-        highest_attack_target = max(valid_targets, key=lambda enemy: enemy.damage)
-        highest_attack_target.damage_health(3)
-        logging.debug(f"{character.name} uses assassinate on {highest_attack_target.name}, dealing 3 damage.")
+    @property
+    def content(self) -> Optional[CharacterInterface]:
+        ...
 
 
-def solid(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Heals when attacked."""
-    target_character.health += 1
 
-    logging.debug(f"{target_character.name}'s heals self.")
+class Delay:
+    def __init__(self, delay_time_s: float) -> None:
+        self.delay_time_s = delay_time_s
+        self.frame_counter = 0
 
-def crippling_blow(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Reduces enemy attack by 1 down to 0 min"""
-    if target_character: 
-        target_character.damage = max(0, target_character.damage - 1)
+    def tick(self) -> None:
+        self.frame_counter += 1
 
-def heal(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Heals the lowest health ally by 1 when attacking."""
-    valid_targets = [slot.content for slot in allies if slot.content and not slot.content.is_dead() and slot.content.health < slot.content.max_health]
-    if valid_targets:
-        lowest_health_ally = min(valid_targets, key=lambda ally: ally.health)
-        lowest_health_ally.health = min(lowest_health_ally.health + 1, lowest_health_ally.max_health)
-        logging.debug(f"{character.name} uses Heal on {lowest_health_ally.name}, healing 1 health.")
+    @property
+    def is_done(self) -> bool:
+        return self.frame_counter > self.delay_time_s * GAME_FPS
 
-def blast(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Deals 1 damage to the enemy behind the target when attacking."""
-    # Find the index of the target character in the enemies list
-    target_index = next((i for i, slot in enumerate(enemies) if slot.content == target_character), None)
+
+class TriggerType(Enum):
+    COMBAT_START = auto()
+    ROUND_START = auto()
+    TURN_START = auto()
+
+
+class Ability(ABC):
+    name: str
+    description: str
+    trigger: TriggerType
+
+    def __init__(self) -> None:
+        self.is_done: bool = False
+
+    @abstractmethod
+    def activate(self, caster: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        ...
+
+
+
+# This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
+def distance_between(slot_a: SlotInterface, slot_b: SlotInterface) -> int:
+    return abs( slot_a.coordinate - slot_b.coordinate )
+
+
+class BasicAttack(Ability):
+    def __init__(self, acting_slot: SlotInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        super().__init__()
+        self.acting_slot = acting_slot
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
     
-    if target_index is not None and target_index + 1 < len(enemies):
-        # Deal 1 damage to the enemy behind the target
-        enemies[target_index + 1].content.damage_health(1)
-        logging.debug(f"{character.name} blasts {target_character.name}, dealing 1 damage to {enemies[target_index + 1].content.name} .")
+        self.targeting_delay = Delay(1)
+        self.victim: Optional[CharacterInterface] = None
 
-
-def parry(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Deals 1 damage to the attacker when defending."""
-    character.damage_health(1)
-    logging.debug(f"{target_character.name} parries, dealing 1 damage to {character.name}")
-
-
-def flying(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Allows the character to always target the last enemy when attacking."""
-    # Get the damage value of the character
-    damage = character.damage
-    
-
-    for i in range(len(enemies) - 1, -1, -1):
-        if enemies[i].content:
-            enemies[i].content.damage_health(damage)
-            logging.debug(f"{character.name} flies to attack {enemies[i].content.name}")
+    def activate(self, caster: CharacterInterface, *_) -> None:
+        # Search for target character, stop early if none found
+        if not self.victim:
+            self.determine_target(caster)
+            return
+        
+        if not self.targeting_delay.is_done:
+            self.targeting_delay.tick()
             return
 
+        self.victim.damage_health(caster.damage)
+        self.victim.is_defending = False
 
-def rampage(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Gains 1 attack when attacking target."""
+        logging.debug(f"{caster.name} attacks {self.victim.name} for {caster.damage} damage!")
 
-    if target_character:
-        character.damage += 1
-        logging.debug(f"{character.name} uses Rampage, gaining 1 attack.")
+        self.is_done = True
 
-def fortify(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Increases all allies' health by 1 at the start of combat."""
-    for slot in allies:
-        slot.content.health += 1
-    logging.debug(f"{character.name} uses fortify to give allies 1 extra health.")
+    def determine_target(self, caster: CharacterInterface) -> None:
+        defender_slots: Sequence[SlotInterface] = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
+
+        for target_slot in reversed( defender_slots ): # Prioritize slots farther away?
+            if not target_slot.content: continue
+            target_candidate = target_slot.content
+            if target_candidate.is_dead(): continue
+            if not caster.range >= distance_between(self.acting_slot, target_slot): continue
+
+            target_candidate.is_defending = True
+            
+            self.victim = target_candidate
+            return
+        
+        logging.debug(f"{caster.name} has no target to attack (range {caster.range}).")
+        self.is_done = True
 
 
-def reckless(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"], target_character: Optional["Character"] = None) -> None:
-    """Loses 1 health when attacking."""
-    character.damage_health(1)
-    logging.debug(f"{character.name} uses Reckless, losing 1 health.")
+
+class Rampage(Ability):
+    name: str = "Rampage"
+    description: str = "Attacking: gain 1 attack"
+    trigger = TriggerType.TURN_START
+
+    def activate(self, caster: CharacterInterface, *_) -> None:
+        caster.damage += 1
+        logging.debug(f"{caster.name} uses Rampage, gaining 1 attack.")
+        self.is_done = True
+
+
+
+class Volley(Ability):
+    name: str = "Volley"
+    description: str = "Combat start: 1 damage to 2 random enemies"
+    trigger = TriggerType.COMBAT_START
+
+    def activate(self, caster: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        defender_slots = enemy_slots if caster in [slot.content for slot in ally_slots] else ally_slots
+
+        valid_targets: list[CharacterInterface] = [slot.content for slot in defender_slots if slot.content and not slot.content.is_dead()]
+        if not valid_targets:
+            logging.debug(f"{caster.name} found No valid enemy targets for Volley")
+            self.is_done = True
+            return
+        
+        for _ in range(2):
+            target = random.choice(valid_targets)
+            logging.debug(f"{caster.name} uses Volley on {target.name}, dealing 1 damage.")
+            target.damage_health(1)
+        self.is_done = True
+
+
+class Heal(Ability):
+    name: str = "Heal"
+    description: str = "Attacking: heal lowest health ally by 1"
+    trigger = TriggerType.ROUND_START
+    healing: int = 1
+
+    def activate(self, caster: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        friendly_slots = enemy_slots if caster not in [slot.content for slot in ally_slots] else ally_slots
+
+        damaged_living_allies = [slot.content for slot in friendly_slots if slot.content and not slot.content.is_dead() and not slot.content.is_full_health()]
+        if not damaged_living_allies: 
+            logging.debug(f"No viable targets to heal for {caster.name}")
+            self.is_done = True
+            return
+        
+        lowest_health_damaged_living_ally = min(damaged_living_allies, key=lambda c: c.health)
+        heal_amount = self.healing # + caster.spell_power
+        logging.debug(f"{caster.name} healed {lowest_health_damaged_living_ally.name} for {heal_amount}")
+        lowest_health_damaged_living_ally.restore_health(heal_amount)
+        self.is_done = True
+
+
+class Reckless(Ability):
+    name: str = "Reckless"
+    description: str = "Loses 1 health when attacking."
+    trigger = TriggerType.TURN_START
+    damage: int = 1
+
+    def activate(self, caster: CharacterInterface, *_) -> None:
+        logging.debug(f"{caster.name} uses Reckless, losing 1 health.")
+        caster.damage_health(self.damage)
+        self.is_done = True
+
+
+#def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Deals 3 damage to the highest attack enemy at the start of combat."""
+#    #TO FIX
+#    # valid_targets = [slot.content for slot in enemies if slot.content and not slot.content.is_dead()]
+#    # if valid_targets:
+#    #     highest_attack = max(valid_targets, key=lambda enemy: enemy.damage)
+#    #     highest_attack.damage_health(3)
+#    #     print(f"{character.name} uses Assassinate on {highest_attack.name}, dealing 3 damage.")
+#
+#
+#def solid(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Limits the maximum damage taken to 2 when defending."""
+#    #TODO
+#
+#
+#def crippling_blow(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Reduces target's attack by 1 when attacking."""
+#    #TODO
+#
+#
+#def blast(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Deals 1 damage to the enemy behind the target when attacking."""
+#    #TODO
+#
+#
+#def parry(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Deals 1 damage to the attacker when defending."""
+#    #TODO
+#
+#def flying(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Allows the character to always target the last enemy when attacking."""
+#    #TODO
+#
+#
+#def fortify(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
+#    """Increases all allies' health by 1 at the start of combat."""
+#    #TODO
