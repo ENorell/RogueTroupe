@@ -1,7 +1,8 @@
 from abc import ABC
 from typing import Final
-from settings import Vector, Color, BLACK_COLOR, DEFAULT_TEXT_SIZE
 from pygame import Rect, draw, Surface, font
+
+from settings import Vector, Color, BLACK_COLOR, DEFAULT_TEXT_SIZE
 
 BUTTON_COLOR: Final[Color] = (9, 97, 59)
 

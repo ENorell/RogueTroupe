@@ -1,15 +1,16 @@
-from interfaces import UserInput
-from character import Character, draw_character
-from character_slot import CombatSlot, draw_slot
-from abilities import BasicAttack, TriggerType, Delay
-from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
-from state_machine import State, StateChoice
-from interactable import Button, draw_button, draw_text
-from renderer import PygameRenderer
-from typing import Optional, Final
 from pygame import transform
-from images import IMAGES, ImageChoice
+from typing import Optional, Final
 import logging
+
+from core.interfaces import UserInput
+from core.renderer import PygameRenderer
+from core.state_machine import State, StateChoice
+from components.character import Character, draw_character
+from components.character_slot import CombatSlot, draw_slot
+from components.interactable import Button, draw_button, draw_text
+from components.abilities import TriggerType, BasicAttack, Delay
+from assets.images import IMAGES, ImageChoice
+from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
 
 
 PAUSE_TIME_S: Final[float] = 1

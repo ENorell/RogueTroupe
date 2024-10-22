@@ -1,13 +1,10 @@
-import os, sys
-sys.path.insert(1, "/".join(os.path.realpath(__file__).split("/")[0:-2]))
-
 from pygame import draw, Rect
-from interfaces import UserInput
 
-from engine         import PygameEngine, CommandlineEngine
-from input_listener import DeafInputListener, PygameInputListener, KeyboardInputListener, CrazyInputListener
-from renderer       import PygameRenderer, NoRenderer, CommandlineRenderer
-from game           import NoGame
+from core.interfaces     import UserInput
+from core.engine         import PygameEngine, CommandlineEngine
+from core.input_listener import DeafInputListener, PygameInputListener, KeyboardInputListener, CrazyInputListener
+from core.renderer       import PygameRenderer, NoRenderer, CommandlineRenderer
+from states.game         import NoGame
 
 
 class MockGame:

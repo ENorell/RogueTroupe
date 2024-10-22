@@ -1,13 +1,13 @@
-from state_machine import State, StateChoice
-from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
-from character_slot import CharacterSlot, CombatSlot, generate_characters
-from drag_dropper import DragDropper, DragDropRenderer
-from interfaces import UserInput
-from interactable import Button, draw_button
 from typing import Final
 from pygame import transform
-from images import IMAGES, ImageChoice
 
+from core.interfaces import UserInput
+from core.state_machine import State, StateChoice
+from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
+from components.character_slot import CharacterSlot, CombatSlot, generate_characters
+from components.drag_dropper import DragDropper, DragDropRenderer
+from components.interactable import Button, draw_button
+from assets.images import IMAGES, ImageChoice
 from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
