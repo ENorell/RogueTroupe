@@ -2,8 +2,9 @@ from typing import Optional, Protocol, Sequence
 import random
 from enum import Enum, auto
 from abc import ABC, abstractmethod
-import logging
 from settings import GAME_FPS
+import logging
+
 
 
 class CharacterInterface(Protocol): # Put an interface to avoid circular imports

@@ -1,10 +1,10 @@
-from data.input_listener import DeafInputListener, PygameInputListener
-from data.engine import PygameEngine
-from data.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
-from data.preparation_state import PreparationState, PreparationRenderer
-from data.character import Stabiraptor
-from data.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
-from data.logger import logging
+from core.input_listener import DeafInputListener, PygameInputListener
+from core.engine import PygameEngine
+from states.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
+from states.preparation_state import PreparationState, PreparationRenderer
+from components.character import Stabiraptor
+from components.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
+from core.logger import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
 

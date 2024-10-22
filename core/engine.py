@@ -2,9 +2,8 @@ import traceback
 import pygame
 from time import sleep
 
-from data.interfaces import Engine, Loopable, Renderer, InputListener
+from core.interfaces import Engine, Loopable, Renderer, InputListener
 from settings import GAME_FPS
-
 
 
 class PygameEngine(Engine):
@@ -33,17 +32,3 @@ class CommandlineEngine(Engine):
 
     def quit(self) -> None:
         print("Exiting...")
-
-
-if __name__ == "__main__":
-    from game import NoGame
-    from renderer import PygameRenderer
-    from input_listener import PygameInputListener
-
-    engine = PygameEngine(
-        NoGame(),
-        PygameRenderer(), 
-        PygameInputListener()
-        )
-
-    engine.run()

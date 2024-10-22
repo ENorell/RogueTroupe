@@ -1,13 +1,14 @@
-from data.input_listener import PygameInputListener
-from data.engine import PygameEngine
-from data.character import *
-from data.character_slot import CharacterSlot, CombatSlot
-from data.combat_state import CombatState
-from data.preparation_state import PreparationState
-from data.shop_state import ShopState, ShopRenderer
-from data.game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
-from data.state_machine import StateMachine, State, StateChoice
-from data.logger import logging # To get baseconfig and set custom debug level
+from core.input_listener import PygameInputListener
+from core.engine import PygameEngine
+from core.state_machine import StateMachine, State, StateChoice
+from core.logger import logging # To get baseconfig and set custom debug level
+from components.character import *
+from components.character_slot import CharacterSlot, CombatSlot
+from states.combat_state import CombatState
+from states.preparation_state import PreparationState
+from states.shop_state import ShopState, ShopRenderer
+from states.game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
+
 logging.getLogger().setLevel(logging.DEBUG)
 
 

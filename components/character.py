@@ -3,9 +3,10 @@ from abc import ABC
 from typing import Optional
 from pygame import Surface, Rect, font
 
-from data.images import ImageChoice, IMAGES
+from components.abilities import *
+from assets.images import ImageChoice, IMAGES
 from settings import Vector, WHITE_COLOR, DEFAULT_TEXT_SIZE, RED_COLOR
-from abilities import *
+
 
 
 class Character(ABC):

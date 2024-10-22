@@ -1,12 +1,12 @@
 from typing import Final
 
-from data.interfaces import Loopable, UserInput
-from data.renderer import PygameRenderer
-from data.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
-from data.state_machine import StateMachine, State, StateChoice
-from data.combat_state import CombatState, CombatRenderer
-from data.preparation_state import PreparationState, PreparationRenderer
-from data.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
+from core.interfaces import Loopable, UserInput
+from core.renderer import PygameRenderer
+from core.state_machine import StateMachine, State, StateChoice
+from components.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
+from states.combat_state import CombatState, CombatRenderer
+from states.preparation_state import PreparationState, PreparationRenderer
+from states.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
 
 from settings import DISPLAY_WIDTH
 

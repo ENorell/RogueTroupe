@@ -1,10 +1,9 @@
 from pygame import Surface, Rect, draw
 from typing import Final, Optional, Sequence
-from character import Character
 from random import choice
 
-from data.interactable import Interactable
-from data.character import Character
+from components.interactable import Interactable
+from components.character import Character
 from settings import Color, Vector, BLACK_COLOR
 
 BATTLE_SLOT_COLOR: Final[Color] = (57, 122, 65)

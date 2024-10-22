@@ -1,10 +1,10 @@
 from pygame import draw, Rect
 
-from data.interfaces import UserInput
-from data.engine         import PygameEngine, CommandlineEngine
-from data.input_listener import DeafInputListener, PygameInputListener, KeyboardInputListener, CrazyInputListener
-from data.renderer       import PygameRenderer, NoRenderer, CommandlineRenderer
-from data.game           import NoGame
+from core.interfaces     import UserInput
+from core.engine         import PygameEngine, CommandlineEngine
+from core.input_listener import DeafInputListener, PygameInputListener, KeyboardInputListener, CrazyInputListener
+from core.renderer       import PygameRenderer, NoRenderer, CommandlineRenderer
+from states.game         import NoGame
 
 
 class MockGame:

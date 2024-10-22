@@ -1,6 +1,6 @@
-from data.engine import PygameEngine
-from data.input_listener import PygameInputListener
-from data.game import Game, GameRenderer
+from core.engine import PygameEngine
+from core.input_listener import PygameInputListener
+from states.game import Game, GameRenderer
 
 
 if __name__ == '__main__':

@@ -1,8 +1,8 @@
 from pygame import display, time
 from typing import Final
 
-from data.interfaces import Renderer, Loopable
-from data.interactable import draw_text
+from core.interfaces import Renderer, Loopable
+from components.interactable import draw_text
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT, GAME_NAME, Vector
 
 
