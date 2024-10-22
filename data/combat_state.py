@@ -1,173 +1,240 @@
-from pygame import transform, font
-from typing import Optional
+from pygame import transform
+from typing import Optional, Final
 import logging
 
 from data.interfaces import UserInput
 from data.character import Character, draw_character
-from data.character_slot import CharacterSlot, draw_slot
+from data.character_slot import CombatSlot, draw_slot
 from data.state_machine import State, StateChoice
 from data.interactable import Button, draw_button, draw_text
 from data.renderer import PygameRenderer
 from data.images import IMAGES, ImageChoice
-
+from abilities import TriggerType, BasicAttack, Delay
 from settings import GAME_FPS, DISPLAY_HEIGHT, DISPLAY_WIDTH
 
 
-class Delay:
-    def __init__(self, delay_time_s: float) -> None:
-        self.delay_frames = int(delay_time_s * GAME_FPS)
-        self.frame_counter = 0
+PAUSE_TIME_S: Final[float] = 1
+CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
-    def tick(self) -> None:
-        self.frame_counter += 1
 
-    @property
-    def is_done(self) -> bool:
-        return self.frame_counter >= self.delay_frames
+def done_triggering_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> bool:
+    for slot in ally_slots + enemy_slots:
+        if not slot.content: continue
+        if     slot.content.is_dead(): continue
+        if not slot.content.ability: continue 
+        if not slot.content.ability.trigger == trigger_type: continue
+        if     slot.content.ability.is_done: continue
+
+        slot.content.ability.activate(slot.content, ally_slots, enemy_slots)
+        return False # We need to iterate some more
+    return True # All abilities are done
+
+
+def refresh_all_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> None:
+    for character in [slot.content for slot in ally_slots + enemy_slots if slot.content and slot.content.ability and slot.content.ability.trigger == trigger_type]:
+        character.refresh_ability()
 
 
 class BattleTurn:
-    def __init__(self, character: Character, character_index: int, attacker_slots: list[CharacterSlot], defender_slots: list[CharacterSlot], battle_log: list[str]) -> None:
-        self.character = character
-        self.character_index = character_index  # Store the character index as an instance attribute
-        self.attacker_slots = attacker_slots
-        self.defender_slots = defender_slots
-        self.battle_log = battle_log
-        self.delay = Delay(0.5)
-        self.is_done = False
-        self.target_character: Optional[Character] = None
+    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.acting_slot = acting_slot
+        assert acting_slot.content # We should never be here if it was empty
+        self.character: Character = acting_slot.content
+        
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
+        
+        self.basic_attack = BasicAttack(acting_slot, ally_slots, enemy_slots)
 
-    def determine_target(self) -> None:
-        for i in range(len(self.defender_slots) - 1, -1, -1):
-            defender_slot = self.defender_slots[i]
-            if defender_slot.content and not defender_slot.content.is_dead() and self.character.range >= i + self.character_index + 1:
-                self.target_character = defender_slot.content
-                self.target_character.is_defending = True
-                return
-        self.target_character = None
+        self.initial_delay = Delay(PAUSE_TIME_S)
+        self.post_attack_delay = Delay(PAUSE_TIME_S)  # Delay after attack or ability
+        self.is_done = False
+
 
     def start_turn(self) -> None:
-        logging.debug(f"Starting turn for {self.character.name}")
+        logging.debug(f"Starting turn for {self.character.name} {"(Ally)" if self.acting_slot in self.ally_slots else "(Enemy)"}")
+
         if self.character.is_dead():
             logging.debug(f"{self.character.name} is dead, skipping turn")
-            self.is_done = True
+            self.end_turn()
             return
-        self.determine_target()
+
+
+    def end_turn(self) -> None:
+        # Potential end of turn effects
+        self.is_done = True
+
 
     def loop(self) -> None:
-        if not self.target_character or self.delay.is_done:
-            if self.target_character:
-                self.target_character.damage_health(self.character.damage)
-                log_message = f"{self.character.name} attacks {self.target_character.name} for {self.character.damage} damage!"
-                self.battle_log.append(log_message)
-                logging.debug(log_message)
-                self.target_character.is_defending = False
-            else:
-                log_message = f"{self.character.name} has no target to attack."
-                self.battle_log.append(log_message)
-                logging.debug(log_message)
-            self.is_done = True
-        else:
-            self.delay.tick()
+        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.TURN_START):
+            return
+
+        # Then execute attack
+        if not self.basic_attack.is_done:
+            self.basic_attack.activate(self.character)
+            return
+        
+        # Delay slightly after attack
+        if not self.post_attack_delay.is_done:
+            self.post_attack_delay.tick()
+            return
+        
+        self.end_turn()
+            
+
+def create_alternating_turn_order(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> list[CombatSlot]:
+    return [slot for pair in zip(ally_slots, enemy_slots) for slot in pair if slot.content and not slot.content.is_dead()]
+
+def create_simple_turn_order(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> list[CombatSlot]:
+    return [slot for slot in ally_slots + enemy_slots if slot.content and not slot.content.is_dead() ]
+
+
+def cleanup_dead_units(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    """Remove dead characters from slots after a round."""
+    for slot in ally_slots + enemy_slots:
+        if slot.content and slot.content.is_dead():
+            character_name = slot.content.name  # Store the character's name before removing
+            logging.debug(f"Removing {character_name} from battlefield as they are dead.")
+            slot.content = None
+
+
+def shift_units_forward(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    """Move all units forward to fill empty slots after a round."""
+    for slots in [ally_slots, enemy_slots]:
+        # Collect all non-empty characters
+        non_empty_slots = [slot.content for slot in slots if slot.content is not None]
+        
+        # Set all slots to None initially
+        for slot in slots:
+            slot.content = None
+        
+        # Fill the slots with non-empty characters
+        for i, character in enumerate(non_empty_slots):
+            slots[i].content = character
+
 
 
 class BattleRound:
-    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot], battle_log: list[str]) -> None:
-        self.battle_log = battle_log
-        ally_turns = [BattleTurn(slot.content, i, ally_slots, enemy_slots, self.battle_log) for i, slot in enumerate(ally_slots) if slot.content and not slot.content.is_dead()]
-        enemy_turns = [BattleTurn(slot.content, i, enemy_slots, ally_slots, self.battle_log) for i, slot in enumerate(enemy_slots) if slot.content and not slot.content.is_dead()]
-
-        self.turn_order = ally_turns + enemy_turns
-        self.current_turn: Optional[BattleTurn] = None
-        self.is_done = False
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
+        self.turn_order: list[CombatSlot] = []
+        self.current_turn: Optional[BattleTurn] = None
+        self.round_start_delay = Delay(PAUSE_TIME_S)
+        self.round_end_delay = Delay(PAUSE_TIME_S)
+        self.is_done = False
 
     def start_round(self) -> None:
-        if self.turn_order:
-            self.current_turn = self.turn_order.pop(0)
-            self.current_turn.start_turn()
-        else:
-            self.is_done = True
-            self.cleanup_dead_units()  # Clean up dead units at the end of the round
-            self.shift_units_forward()  # Shift units forward to fill empty slots
+        self.slot_turn_order: list[CombatSlot] = create_alternating_turn_order(self.ally_slots, self.enemy_slots)
+        assert self.slot_turn_order # Something is wrong if this is empty at start of turn
+        
+    def start_next_turn(self) -> None:
+        next_slot = self.slot_turn_order.pop(0)
+        assert next_slot.content
+
+        self.current_turn = BattleTurn(next_slot, self.ally_slots, self.enemy_slots) 
+        self.current_turn.start_turn()
+
+    def end_round(self) -> None:
+        cleanup_dead_units(self.ally_slots, self.enemy_slots)  # Clean up dead units at the end of the round
+        shift_units_forward(self.ally_slots, self.enemy_slots)  # Shift units forward to fill empty slots
+        refresh_all_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START) # Reset the state of the abilities to be used again later
+        refresh_all_abilities(self.ally_slots, self.enemy_slots, TriggerType.TURN_START)
+        self.is_done = True
+    
+    def any_turns_left(self) -> bool:
+        return bool(self.slot_turn_order)
 
     def loop(self) -> None:
-        if self.current_turn and self.current_turn.is_done:
-            self.start_round()
-        elif self.current_turn:
+        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START):
+            return
+
+        if not self.round_start_delay.is_done:
+            self.round_start_delay.tick()
+            return
+
+        if not self.current_turn: # Allows us to wait for start of round abilities, happens exactly once
+            self.start_next_turn()
+            return
+
+        if not self.current_turn.is_done:
             self.current_turn.loop()
-    
-    def cleanup_dead_units(self) -> None:
-        """Remove dead characters from slots after a round."""
-        for slot in self.ally_slots + self.enemy_slots:
-            if slot.content and slot.content.is_dead():
-                character_name = slot.content.name  # Store the character's name before removing
-                self.battle_log.append(f"{character_name} has been removed from the battlefield due to being defeated.")
-                slot.content = None
+            return
+        
+        if self.any_turns_left():
+            self.start_next_turn()
+            return
 
-    def shift_units_forward(self) -> None:
-        """Move all units forward to fill empty slots after a round."""
-        for slots in [self.ally_slots, self.enemy_slots]:
-            # Collect all non-empty characters
-            non_empty_slots = [slot.content for slot in slots if slot.content is not None]
-            
-            # Set all slots to None initially
-            for slot in slots:
-                slot.content = None
-            
-            # Fill the slots with non-empty characters
-            for i, character in enumerate(non_empty_slots):
-                slots[i].content = character
+        if not self.round_end_delay.is_done:
+            self.round_end_delay.tick()
+            return
 
-def revive_ally_characters(slots: list[CharacterSlot]) -> None:
+        self.end_round()
+
+
+def revive_ally_characters(slots: list[CombatSlot]) -> None:
     for slot in slots:
         if slot.content:
             slot.content.revive()
             logging.debug(f"Revived {slot.content.name}")
 
-def is_everyone_dead(slots: list[CharacterSlot]) -> bool:
+def is_everyone_dead(slots: list[CombatSlot]) -> bool:
     return all(slot.content is None or slot.content.is_dead() for slot in slots)
 
 
+
 class CombatState(State):
-    def __init__(self, ally_slots: list[CharacterSlot], enemy_slots: list[CharacterSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
-        self.battle_log: list[str] = []
+        self.current_round: Optional[BattleRound] = None
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
         self.round_counter = 0
-        self.start_new_round()
         
-    def start_new_round(self) -> None:
+    def start_next_round(self) -> None:
         self.round_counter += 1
         logging.info(f"Starting Round {self.round_counter}")
-        self.current_round = BattleRound(self.ally_slots, self.enemy_slots, self.battle_log)
+        self.current_round = BattleRound(self.ally_slots, self.enemy_slots)
         self.current_round.start_round()
 
     def is_combat_concluded(self) -> bool:
         return is_everyone_dead(self.ally_slots) or is_everyone_dead(self.enemy_slots)
+    
+    def user_exits_combat(self, user_input: UserInput) -> bool:
+        self.continue_button.refresh(user_input.mouse_position)
+        return (self.continue_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down
+    
+    def end_combat(self) -> None:
+        logging.debug("Continue button clicked, ending combat")
+        revive_ally_characters(self.ally_slots)
+        self.next_state = StateChoice.SHOP
 
     def loop(self, user_input: UserInput) -> None:
-        self.continue_button.refresh(user_input.mouse_position)
+        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.COMBAT_START):
+            return
 
-        if self.is_combat_concluded():
-            if (self.continue_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
-                logging.debug("Continue button clicked, switching states")
-                revive_ally_characters(self.ally_slots)
-                self.next_state = StateChoice.SHOP
-        elif not self.current_round.is_done:
+        if not self.current_round: # Allows us to wait for start of combat abilities, happens exactly once
+            self.start_next_round()
+            return
+        
+        if not self.current_round.is_done:
             self.current_round.loop()
-        else:
-            self.start_new_round()
+            return
+        
+        if not self.is_combat_concluded():
+            self.start_next_round()
+            return
+
+        if self.user_exits_combat(user_input):
+            self.end_combat()
 
 
 class CombatRenderer(PygameRenderer): 
-    background_image = transform.scale( IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+    background_image = transform.scale(IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, combat_state: CombatState) -> None:
         self.frame.blit(self.background_image, (0, 0))
@@ -183,10 +250,7 @@ class CombatRenderer(PygameRenderer):
                 is_acting = (combat_state.current_round and combat_state.current_round.current_turn and
                              combat_state.current_round.current_turn.character == slot.content and
                              not slot.content.is_dead())
-                draw_character(self.frame, slot.center_coordinate, slot.content, scale_ratio=1.5 if slot.is_hovered or is_acting else 1)
+                is_enemy_slot = slot in combat_state.enemy_slots
+                scale_ratio = CHARACTER_HOVER_SCALE_RATIO if slot.is_hovered or is_acting else 1
 
-        if combat_state.battle_log:
-            text_font = font.SysFont(None, 32)
-            for i, log_entry in enumerate(combat_state.battle_log[-5:]):
-                text_surface = text_font.render(log_entry, True, (255, 255, 255))
-                self.frame.blit(text_surface, (30, 160 + i * 32))
+                draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio)

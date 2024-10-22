@@ -25,7 +25,7 @@ class MockCliRenderer(CommandlineRenderer):
             print(ascii_graphic, end='\r')
 
 
-engine = CommandlineEngine(
+engine = PygameEngine(
     MockGame(),
     MockPgRenderer(),
     CrazyInputListener() 

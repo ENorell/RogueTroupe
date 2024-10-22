@@ -1,4 +1,4 @@
-from pygame import display, time, Surface
+from pygame import display, time
 from typing import Final
 
 from data.interfaces import Renderer, Loopable

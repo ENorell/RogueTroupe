@@ -2,7 +2,7 @@ from typing import Final
 
 from data.interfaces import Loopable, UserInput
 from data.renderer import PygameRenderer
-from data.character_slot import CharacterSlot, BATTLE_SLOT_COLOR
+from data.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
 from data.state_machine import StateMachine, State, StateChoice
 from data.combat_state import CombatState, CombatRenderer
 from data.preparation_state import PreparationState, PreparationRenderer
@@ -22,20 +22,22 @@ class NoGame(Loopable):
     def loop(self, user_input: UserInput) -> None:
         pass
 
-def create_ally_slots() -> list[CharacterSlot]:
+def create_ally_slots() -> list[CombatSlot]:
     slots = []
     first_slot_position = SCREEN_CENTER - DISTANCE_CENTER_TO_SLOTS - round(CharacterSlot.width_pixels / 2)
     for slot_nr in range(NR_BATTLE_SLOTS_PER_TEAM):
         position_x = first_slot_position - slot_nr * (DISTANCE_BETWEEN_SLOTS + CharacterSlot.width_pixels)
-        slots.append(CharacterSlot((position_x, SLOT_HEIGHT), BATTLE_SLOT_COLOR))
+        coordinate = NR_BATTLE_SLOTS_PER_TEAM - slot_nr
+        slots.append(CombatSlot((position_x, SLOT_HEIGHT), coordinate, BATTLE_SLOT_COLOR))
     return slots
 
-def create_enemy_slots() -> list[CharacterSlot]:
+def create_enemy_slots() -> list[CombatSlot]:
     slots = []
     first_slot_position = SCREEN_CENTER + DISTANCE_CENTER_TO_SLOTS - round(CharacterSlot.width_pixels / 2)
     for slot_nr in range(NR_BATTLE_SLOTS_PER_TEAM):
         position_x = first_slot_position + slot_nr * (DISTANCE_BETWEEN_SLOTS + CharacterSlot.width_pixels)
-        slots.append(CharacterSlot((position_x, SLOT_HEIGHT), BATTLE_SLOT_COLOR))
+        coordinate = slot_nr + 1 + NR_BATTLE_SLOTS_PER_TEAM
+        slots.append(CombatSlot((position_x, SLOT_HEIGHT), coordinate, BATTLE_SLOT_COLOR))
     return slots
 
 def create_bench_slots() -> list[CharacterSlot]:
