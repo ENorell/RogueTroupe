@@ -1,5 +1,5 @@
 from state_machine import State, StateChoice
-from character import Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
+from character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
 from character_slot import CharacterSlot, CombatSlot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interfaces import UserInput
@@ -11,7 +11,7 @@ from images import IMAGES, ImageChoice
 from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
-SHOP_POOL: list[type] = [
+SHOP_POOL: list[type[Character]] = [
     Tankylosaurus,
     Macedon,
     Healamimus,

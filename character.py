@@ -14,7 +14,7 @@ class Character(ABC):
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    ability: Optional[Ability] = None
+    ability_type: Optional[type[Ability]] = None # Wait with instantiation until initializer due to mutability
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
@@ -24,18 +24,20 @@ class Character(ABC):
         self.is_defending = False
         self.target = None
         self.attacker = None
+        self.ability: Optional[Ability] = self.ability_type() if self.ability_type else None
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
+        if self.health == 0: logging.debug(f"{self.name} died")
 
     def is_dead(self) -> bool:
         return self.health == 0
     
     def restore_health(self, healing: int) -> None:
-        self._health = min(self._health + healing, self.max_health)
+        self.health = min(self.health + healing, self.max_health)
 
     def is_full_health(self) -> bool:
-        return self._health == self.max_health
+        return self.health == self.max_health
 
     def revive(self) -> None:
         self.health = self.max_health
@@ -52,7 +54,7 @@ class Archeryptrx(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_ARCHER
-    ability = Volley()
+    ability_type: Optional[type[Ability]] = Volley
 
 class Stabiraptor(Character):
     '''An assassin focussed on eliminating dangerous enemies'''
@@ -61,7 +63,7 @@ class Stabiraptor(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_ASSASSIN_RAPTOR
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 
 class Tankylosaurus(Character):
@@ -71,7 +73,7 @@ class Tankylosaurus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_CLUB
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 
 class Macedon(Character):
@@ -81,7 +83,7 @@ class Macedon(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_CREST
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 
 class Healamimus(Character):
@@ -91,7 +93,7 @@ class Healamimus(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_HEALER
-    ability: Ability = Heal()
+    ability_type: Optional[type[Ability]] = Heal
 
 
 class Dilophmageras(Character):
@@ -101,7 +103,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 
 class Tripiketops(Character):
@@ -111,7 +113,7 @@ class Tripiketops(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_PIKEMAN
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 
 class Pterapike(Character):
@@ -121,7 +123,7 @@ class Pterapike(Character):
     damage: int = 1
     range: int = 0
     character_image = ImageChoice.CHARACTER_PTERO
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 class Spinoswordaus(Character):
     '''A powerful warrior that becomes lethal as the battle progresses'''
@@ -130,7 +132,7 @@ class Spinoswordaus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_SPINO
-    ability = Rampage()
+    ability_type: Optional[type[Ability]] = Rampage
 
 class Ateratops(Character):
     '''A mage that enhances allied health'''
@@ -139,7 +141,7 @@ class Ateratops(Character):
     damage: int = 2
     range: int = 1  # Melee range
     character_image = ImageChoice.CHARACTER_SUMMONER
-    ability = None
+    ability_type: Optional[type[Ability]] = None
 
 class Velocirougue(Character):
     '''a dual wielding rogue, high damage but hurts self on attack, relies on quick victory'''
@@ -148,7 +150,7 @@ class Velocirougue(Character):
     damage: int = 3
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
-    ability = Reckless()
+    ability_type: Optional[type[Ability]] = Reckless
 
 
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1) -> None:
@@ -167,15 +169,15 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_
             character_image = IMAGES[character.corpse_image].convert_alpha()
         case False:
             character_image = IMAGES[character.character_image].convert_alpha()
-    
-    character_image = pygame.transform.scale(character_image, (character.width_pixels, character.height_pixels))
-    if is_enemy:
-        character_image = pygame.transform.flip(character_image, True, False)
 
     center_x, bottom_y = mid_bottom
     top_left = (center_x - character.width_pixels / 2, bottom_y - character.height_pixels)
     rect = Rect(top_left, (character.width_pixels, character.height_pixels))
     rect = rect.scale_by(scale_ratio, scale_ratio)
+
+    character_image = pygame.transform.scale(character_image, rect.size)
+    if is_enemy:
+        character_image = pygame.transform.flip(character_image, True, False)
 
     mid_top = (center_x, bottom_y - character.height_pixels)
 

@@ -23,12 +23,12 @@ bench_slots: list[CharacterSlot] = create_bench_slots()
 
 ally_slots[0].content = Velocirougue()
 ally_slots[1].content = Pterapike()
-ally_slots[2].content = Dilophmageras()
-ally_slots[3].content = Stabiraptor()
+ally_slots[2].content = Healamimus()
+ally_slots[3].content = Archeryptrx()
 enemy_slots[0].content = Spinoswordaus()
 enemy_slots[1].content = Healamimus()
-enemy_slots[2].content = Macedon()
-enemy_slots[3].content = Ateratops()
+enemy_slots[2].content = Spinoswordaus()
+enemy_slots[3].content = Spinoswordaus()
 
 
 combat_state = CombatState(ally_slots, enemy_slots)
@@ -45,7 +45,7 @@ states: dict[StateChoice, State] = {
     }
 
 
-state_machine = StateMachine(states, StateChoice.PREPARATION)
+state_machine = StateMachine(states, StateChoice.BATTLE)
 
 
 engine = PygameEngine(

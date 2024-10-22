@@ -1,6 +1,6 @@
 from interfaces import UserInput
 from state_machine import State, StateChoice
-from character import draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
+from character import Character, draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
 from character_slot import CharacterSlot, CombatSlot, draw_slot, generate_characters
 from drag_dropper import DragDropper, DragDropRenderer
 from interactable import Button, draw_button
@@ -11,7 +11,7 @@ from images import IMAGES, ImageChoice
 from logger import logging
 
 
-ENEMY_POOL: Final[list[type]] = [
+ENEMY_POOL: Final[list[type[Character]]] = [
     Spinoswordaus,
     Stabiraptor,
     Pterapike,
