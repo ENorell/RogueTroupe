@@ -13,7 +13,7 @@ from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
 
 
-PAUSE_TIME_S: Final[float] = 1
+PAUSE_TIME_S: Final[float] = 0.2
 CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
 
