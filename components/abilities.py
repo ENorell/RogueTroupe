@@ -12,6 +12,7 @@ class CharacterInterface(Protocol): # Put an interface to avoid circular imports
     name: str
     range: int
     is_defending: bool
+    combat_indicator: str
 
     def damage_health(self, damage: int) -> None:
         ...
@@ -54,6 +55,8 @@ class TriggerType(Enum):
     TURN_START = auto()
 
 
+
+
 class Ability(ABC):
     name: str
     description: str
@@ -67,12 +70,9 @@ class Ability(ABC):
         ...
 
 
-
 # This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
 def distance_between(slot_a: SlotInterface, slot_b: SlotInterface) -> int:
     return abs( slot_a.coordinate - slot_b.coordinate )
-
-
 class BasicAttack(Ability):
     def __init__(self, acting_slot: SlotInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
         super().__init__()
@@ -81,20 +81,40 @@ class BasicAttack(Ability):
         self.enemy_slots = enemy_slots
     
         self.targeting_delay = Delay(1)
+        self.waiting_delay = Delay(0.3)
         self.victim: Optional[CharacterInterface] = None
+        self.waiting: bool = False
 
     def activate(self, caster: CharacterInterface, *_) -> None:
         # Search for target character, stop early if none found
+
         if not self.victim:
             self.determine_target(caster)
             return
+        
+        if self.waiting:
+            if not self.waiting_delay.is_done:
+                caster.combat_indicator = "Waiting"
+                self.waiting_delay.tick()
+                return
+            else:
+                caster.combat_indicator = None
+                self.is_done = True
+                self.waiting = False
+                return
+        
+        self.victim.combat_indicator = f"-{caster.damage}"
+        caster.combat_indicator = "Attack!"
         
         if not self.targeting_delay.is_done:
             self.targeting_delay.tick()
             return
 
         self.victim.damage_health(caster.damage)
+
         self.victim.is_defending = False
+        self.victim.combat_indicator = None
+        caster.combat_indicator = None
 
         logging.debug(f"{caster.name} attacks {self.victim.name} for {caster.damage} damage!")
 
@@ -114,9 +134,16 @@ class BasicAttack(Ability):
             self.victim = target_candidate
             return
         
+        # No valid target found, set combat indicator to "Waiting" and start waiting delay
+        if not self.waiting_delay.is_done:
+            caster.combat_indicator = "Waiting"
+            self.waiting = True
+            self.waiting_delay.tick()
+            return
+        
+        caster.combat_indicator = None
         logging.debug(f"{caster.name} has no target to attack (range {caster.range}).")
         self.is_done = True
-
 
 
 class Rampage(Ability):

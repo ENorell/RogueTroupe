@@ -24,6 +24,8 @@ class ImageChoice(Enum):
     SLOT_HOVER                = "assets/ui/slot-hover.webp"
 
     COMBAT_TARGET             = "assets/ui/target.png"
+    HEALTH_ICON               = "assets/ui/health.webp"
+    DAMAGE_ICON               = "assets/ui/attack.webp"
 
 
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}
