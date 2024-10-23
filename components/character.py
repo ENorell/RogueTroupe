@@ -167,12 +167,17 @@ class Velocirougue(Character):
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
     ability_type: Optional[type[Ability]] = Reckless
+from functools import lru_cache
+
+@lru_cache(maxsize=128)
+def get_cached_font(font_name: str, font_size: int):
+    return font.SysFont(name=font_name, size=font_size)
 
 def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1, font_name: str = "pixel_font", color: tuple[int, int, int] = BLACK_COLOR) -> None:
     font_size: int = round(DEFAULT_TEXT_SIZE * scale_ratio)
-    text_font = font.SysFont(name=font_name, size=font_size)
-    text = text_font.render(text_content, 1, color)
-    text_topleft_position = (center_position[0] - text.get_width() / 2, center_position[1] - text.get_height())
+    text_font = get_cached_font(font_name, font_size)
+    text = text_font.render(text_content, True, color)
+    text_topleft_position = (center_position[0] - text.get_width() / 2, center_position[1] - text.get_height() / 2)
     window.blit(text, text_topleft_position)
 
 def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_enemy: bool = False, scale_ratio: float = 1, slot_is_hovered: bool = False):
@@ -183,19 +188,22 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_
     if slot_is_hovered:
         draw_tooltip(frame, character, mid_bottom, scale_ratio)
 
+@lru_cache(maxsize=128)
+def get_scaled_image(image_key: str, size: tuple[int, int], flip: bool = False) -> Surface:
+    character_image = IMAGES[image_key].convert_alpha()
+    character_image = pygame.transform.scale(character_image, size)
+    if flip:
+        character_image = pygame.transform.flip(character_image, True, False)
+    return character_image
+
 def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: float, is_enemy: bool) -> tuple[Surface, Rect]:
     image_key = character.corpse_image if character.is_dead() else character.character_image
-    character_image = IMAGES[image_key].convert_alpha()
-
     rect = Rect(
-        (mid_bottom[0] - character.width_pixels / 2, mid_bottom[1] - character.height_pixels),
-        (character.width_pixels, character.height_pixels)
-    ).scale_by(scale_ratio, scale_ratio)
+        (mid_bottom[0] - character.width_pixels * scale_ratio / 2, mid_bottom[1] - character.height_pixels * scale_ratio),
+        (character.width_pixels * scale_ratio, character.height_pixels * scale_ratio)
+    )
 
-    character_image = pygame.transform.scale(character_image, rect.size)
-    if is_enemy:
-        character_image = pygame.transform.flip(character_image, True, False)
-
+    character_image = get_scaled_image(image_key, rect.size, flip=is_enemy)
     return character_image, rect
 
 def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
@@ -203,11 +211,11 @@ def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale
     box_height = TOOLTIP_HEIGHT * scale_ratio
 
     tooltip_rect = Rect(
-        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels - box_height - 10),
+        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels * scale_ratio - box_height - 10),
         (box_width, box_height)
     )
 
-    tooltip_image = pygame.transform.scale(IMAGES[ImageChoice.CHARACTER_TOOLTIP].convert_alpha(), tooltip_rect.size)
+    tooltip_image = get_scaled_image(ImageChoice.CHARACTER_TOOLTIP, tooltip_rect.size)
     frame.blit(tooltip_image, tooltip_rect.topleft)
     draw_tooltip_text(frame, character, tooltip_rect, scale_ratio)
 
@@ -217,31 +225,29 @@ def draw_tooltip_text(frame: Surface, character: Character, tooltip_rect: Rect, 
     draw_character_ability(frame, character, tooltip_rect, scale_ratio)
 
 def draw_range_icons(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
-    range_icon = pygame.transform.scale(IMAGES[ImageChoice.SLOT].convert_alpha(), (RANGE_ICON_WIDTH, RANGE_ICON_HEIGHT))
-    total_range_width = (character.range + 1) * RANGE_ICON_HEIGHT
+    range_icon = get_scaled_image(ImageChoice.SLOT, (RANGE_ICON_WIDTH, RANGE_ICON_HEIGHT))
+    total_range_width = (character.range + 1) * RANGE_ICON_WIDTH
     start_x = tooltip_rect.left + (tooltip_rect.width - total_range_width) / 2
-    target_indicator = pygame.transform.scale(IMAGES[ImageChoice.COMBAT_TARGET].convert_alpha(), (RANGE_ICON_HEIGHT, RANGE_ICON_HEIGHT))
+    target_indicator = get_scaled_image(ImageChoice.COMBAT_TARGET, (RANGE_ICON_HEIGHT, RANGE_ICON_HEIGHT))
+
     range_indicator_offset = 65
 
     for i in range(character.range + 1):
         range_icon_position = (start_x + i * RANGE_ICON_WIDTH, tooltip_rect.top + range_indicator_offset)
         frame.blit(range_icon, range_icon_position)
-        # Target indicator on all but the character
         if i != 0:
-            frame.blit(target_indicator, (range_icon_position[0]+(RANGE_ICON_WIDTH-RANGE_ICON_HEIGHT)/2, range_icon_position[1] - RANGE_ICON_HEIGHT / 2))
-            draw_text(f"{character.damage}", frame, (range_icon_position[0] + RANGE_ICON_WIDTH / 2 +(RANGE_ICON_WIDTH-RANGE_ICON_HEIGHT)/2 - 5, range_icon_position[1] + RANGE_ICON_HEIGHT / 2 - 5), scale_ratio *1.5 ,font_name = "pixel_font")
+            frame.blit(target_indicator, (range_icon_position[0] + (RANGE_ICON_WIDTH - RANGE_ICON_HEIGHT) / 2, range_icon_position[1] - RANGE_ICON_HEIGHT / 2))
+            draw_text(f"{character.damage}", frame, (range_icon_position[0] + RANGE_ICON_WIDTH / 2 + (RANGE_ICON_WIDTH - RANGE_ICON_HEIGHT) / 2 - 5, range_icon_position[1] + RANGE_ICON_HEIGHT / 2 - 5), scale_ratio * 1.5, font_name="pixel_font")
 
     if character.range > 0:
-        #Scale character to the width of the icon
         character_icon_size = CHARACTER_ICON_SCALE * RANGE_ICON_WIDTH
-
-        character_image = pygame.transform.scale(IMAGES[character.character_image].convert_alpha(), (character_icon_size,character_icon_size))
+        character_image = get_scaled_image(character.character_image, (character_icon_size, character_icon_size))
         frame.blit(character_image, (start_x, tooltip_rect.top + range_indicator_offset - character_icon_size / 2))
 
 def draw_character_ability(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
     if character.ability:
-        ability_text = f"{character.ability_type.name} : {TRIGGER_TYPE_DESCRIPTIONS.get(character.ability_type.trigger, "Unknown Trigger")}"
-        ability_desc = f"{character.ability_type.description}" 
+        ability_text = f"{character.ability_type.name} : {TRIGGER_TYPE_DESCRIPTIONS.get(character.ability_type.trigger, 'Unknown Trigger')}"
+        ability_desc = f"{character.ability_type.description}"
         draw_text(ability_text, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 125), scale_ratio, "pixel_font")
         draw_text(ability_desc, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 145), scale_ratio, "pixel_font")
     else:
@@ -251,31 +257,25 @@ def draw_character_status(frame: Surface, character: Character, rect: Rect, mid_
     if character.is_dead():
         draw_text("DEAD", frame, mid_bottom, scale_ratio, "pixel_font")
     else:
-        if character.is_attacking:
-            draw_defending_indicator(frame, rect)
-        if character.is_defending:
+        if character.is_attacking or character.is_defending:
             draw_defending_indicator(frame, rect)
         draw_health_and_damage(frame, character, mid_bottom, scale_ratio)
         if character.combat_indicator:
             draw_text(character.combat_indicator, frame, (mid_bottom[0], rect.top - 20), 2, "pixel_font", color=RED_COLOR)
 
 def draw_defending_indicator(frame: Surface, rect: Rect):
-    target_image = pygame.transform.scale(IMAGES[ImageChoice.COMBAT_TARGET].convert_alpha(), rect.size)
+    target_image = get_scaled_image(ImageChoice.COMBAT_TARGET, rect.size)
     frame.blit(target_image, rect.topleft)
 
 def draw_health_and_damage(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
-
-    # Draw health sprite and text
-    health_icon = pygame.transform.scale(IMAGES[ImageChoice.HEALTH_ICON].convert_alpha(), (HEALTH_ICON_SIZE, HEALTH_ICON_SIZE))
-    health_pos = (mid_bottom[0] - 20 - HEALTH_ICON_SIZE/2, mid_bottom[1])
+    health_icon = get_scaled_image(ImageChoice.HEALTH_ICON, (HEALTH_ICON_SIZE, HEALTH_ICON_SIZE))
+    health_pos = (mid_bottom[0] - 20 - HEALTH_ICON_SIZE / 2, mid_bottom[1])
     frame.blit(health_icon, health_pos)
     health_text = f"{character.health}"
-    draw_text(health_text, frame, (health_pos[0] + HEALTH_ICON_SIZE/2, health_pos[1] + 0.8 * HEALTH_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
+    draw_text(health_text, frame, (health_pos[0] + HEALTH_ICON_SIZE / 2, health_pos[1] + 0.8 * HEALTH_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
 
-    # Draw damage sprite and text
-    damage_icon = pygame.transform.scale(IMAGES[ImageChoice.DAMAGE_ICON].convert_alpha(), (DAMAGE_ICON_SIZE, DAMAGE_ICON_SIZE))
-    damage_pos = (mid_bottom[0] + 20 - DAMAGE_ICON_SIZE/2, mid_bottom[1])
+    damage_icon = get_scaled_image(ImageChoice.DAMAGE_ICON, (DAMAGE_ICON_SIZE, DAMAGE_ICON_SIZE))
+    damage_pos = (mid_bottom[0] + 20 - DAMAGE_ICON_SIZE / 2, mid_bottom[1])
     frame.blit(damage_icon, damage_pos)
     damage_text = f"{character.damage}"
-
-    draw_text(damage_text, frame, (damage_pos[0]+DAMAGE_ICON_SIZE/2, damage_pos[1] + 0.8 * DAMAGE_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
+    draw_text(damage_text, frame, (damage_pos[0] + DAMAGE_ICON_SIZE / 2, damage_pos[1] + 0.8 * DAMAGE_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
