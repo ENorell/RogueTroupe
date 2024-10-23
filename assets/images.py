@@ -19,5 +19,11 @@ class ImageChoice(Enum):
     CHARACTER_SUMMONER        = "assets/characters/summoner-transformed.webp"
     CHARACTER_VELO            = "assets/characters/velo-transformed.webp"
 
+    CHARACTER_TOOLTIP         = "assets/ui/tooltip.webp"
+    SLOT                      = "assets/ui/slot.webp"
+    SLOT_HOVER                = "assets/ui/slot-hover.webp"
+
+    COMBAT_TARGET             = "assets/ui/target.png"
+
 
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}

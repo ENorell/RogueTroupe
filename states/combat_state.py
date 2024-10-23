@@ -253,4 +253,4 @@ class CombatRenderer(PygameRenderer):
                 is_enemy_slot = slot in combat_state.enemy_slots
                 scale_ratio = CHARACTER_HOVER_SCALE_RATIO if slot.is_hovered or is_acting else 1
 
-                draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio)
+                draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio, slot.is_hovered)

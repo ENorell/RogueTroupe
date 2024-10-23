@@ -15,4 +15,4 @@ GREEN_COLOR: Final[Color] = (0, 255, 0)
 BLUE_COLOR: Final[Color] = (0, 0, 255)
 YELLOW_COLOR: Final[Color] = (255, 255, 0)
 
-DEFAULT_TEXT_SIZE: Final[int] = 15
+DEFAULT_TEXT_SIZE: Final[int] = 16

@@ -67,4 +67,4 @@ class DragDropRenderer(PygameRenderer):
 
             scale_ratio = 1.5 if slot.is_hovered else 1
 
-            draw_character(self.frame, position, slot.content, scale_ratio = scale_ratio)
+            draw_character(self.frame, position, slot.content, scale_ratio = scale_ratio, slot_is_hovered = slot.is_hovered)
