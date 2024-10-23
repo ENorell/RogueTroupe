@@ -38,6 +38,9 @@ class Character(ABC):
     def restore_health(self, healing: int) -> None:
         self.health = min(self.health + healing, self.max_health)
 
+    def raise_max_health(self, amount: int) -> None:
+        self.max_health += amount # Shared between instances?...
+
     def is_full_health(self) -> bool:
         return self.health == self.max_health
 
@@ -81,7 +84,7 @@ class Macedon(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_CREST
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Devour
 
 
 class Healamimus(Character):

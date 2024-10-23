@@ -21,9 +21,9 @@ ally_slots[1].content = Pterapike()
 ally_slots[2].content = Healamimus()
 ally_slots[3].content = Archeryptrx()
 enemy_slots[0].content = Spinoswordaus()
-enemy_slots[1].content = Healamimus()
-enemy_slots[2].content = Spinoswordaus()
-enemy_slots[3].content = Spinoswordaus()
+enemy_slots[1].content = Macedon()
+enemy_slots[2].content = Macedon()
+enemy_slots[3].content = Macedon()
 
 
 combat_state = CombatState(ally_slots, enemy_slots)

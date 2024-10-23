@@ -17,6 +17,8 @@ class CharacterInterface(Protocol): # Put an interface to avoid circular imports
         ...
     def restore_health(self, healing: int) -> None:
         ...
+    def raise_max_health(self, amount: int) -> None:
+        ...
     def is_dead(self) -> bool:
         ...
     def is_full_health(self) -> bool:
@@ -52,6 +54,9 @@ class TriggerType(Enum):
     COMBAT_START = auto()
     ROUND_START = auto()
     TURN_START = auto()
+    ATTACK = auto()
+    DEFEND = auto()
+    DEATH = auto()
 
 
 class Ability(ABC):
@@ -71,51 +76,6 @@ class Ability(ABC):
 # This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
 def distance_between(slot_a: SlotInterface, slot_b: SlotInterface) -> int:
     return abs( slot_a.coordinate - slot_b.coordinate )
-
-
-class BasicAttack(Ability):
-    def __init__(self, acting_slot: SlotInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
-        super().__init__()
-        self.acting_slot = acting_slot
-        self.ally_slots = ally_slots
-        self.enemy_slots = enemy_slots
-    
-        self.targeting_delay = Delay(1)
-        self.victim: Optional[CharacterInterface] = None
-
-    def activate(self, caster: CharacterInterface, *_) -> None:
-        # Search for target character, stop early if none found
-        if not self.victim:
-            self.determine_target(caster)
-            return
-        
-        if not self.targeting_delay.is_done:
-            self.targeting_delay.tick()
-            return
-
-        self.victim.damage_health(caster.damage)
-        self.victim.is_defending = False
-
-        logging.debug(f"{caster.name} attacks {self.victim.name} for {caster.damage} damage!")
-
-        self.is_done = True
-
-    def determine_target(self, caster: CharacterInterface) -> None:
-        defender_slots: Sequence[SlotInterface] = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
-
-        for target_slot in reversed( defender_slots ): # Prioritize slots farther away?
-            if not target_slot.content: continue
-            target_candidate = target_slot.content
-            if target_candidate.is_dead(): continue
-            if not caster.range >= distance_between(self.acting_slot, target_slot): continue
-
-            target_candidate.is_defending = True
-            
-            self.victim = target_candidate
-            return
-        
-        logging.debug(f"{caster.name} has no target to attack (range {caster.range}).")
-        self.is_done = True
 
 
 
@@ -183,6 +143,18 @@ class Reckless(Ability):
     def activate(self, caster: CharacterInterface, *_) -> None:
         logging.debug(f"{caster.name} uses Reckless, losing 1 health.")
         caster.damage_health(self.damage)
+        self.is_done = True
+
+
+class Devour(Ability):
+    name: str = "Reckless"
+    description: str = "Gains 1 max health when attacking."
+    trigger = TriggerType.ATTACK
+    amount: int = 1
+
+    def activate(self, caster: CharacterInterface, *_) -> None:
+        logging.debug(f"{caster.name} uses Devour, raising their max health by {self.amount}.")
+        caster.raise_max_health(self.amount)
         self.is_done = True
 
 

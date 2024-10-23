@@ -8,7 +8,7 @@ from core.state_machine import State, StateChoice
 from components.character import Character, draw_character
 from components.character_slot import CombatSlot, draw_slot
 from components.interactable import Button, draw_button, draw_text
-from components.abilities import Ability, TriggerType, BasicAttack, Delay
+from components.abilities import Ability, TriggerType, Delay, distance_between
 from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
 
@@ -46,6 +46,65 @@ class AbilityHandler:
             if not ability.is_done:
                 ability.activate(character, self.ally_slots, self.enemy_slots)
                 return
+        self.is_done = True
+
+
+
+class BasicAttack(Ability):
+    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        super().__init__()
+        self.acting_slot = acting_slot
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
+    
+        self.targeting_delay = Delay(1)
+        self.victim: Optional[Character] = None
+        self.on_attack_ability = AbilityHandler(ally_slots, enemy_slots)
+        self.on_defend_ability = AbilityHandler(ally_slots, enemy_slots)
+
+    def determine_target(self, caster: Character) -> None:
+        self.on_attack_ability.setup_single(caster, TriggerType.ATTACK)
+
+        defender_slots: list[CombatSlot] = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
+
+        for target_slot in reversed( defender_slots ): # Prioritize slots farther away?
+            if not target_slot.content: continue
+            target_candidate = target_slot.content
+            if target_candidate.is_dead(): continue
+            if not caster.range >= distance_between(self.acting_slot, target_slot): continue
+
+            target_candidate.is_defending = True
+            self.on_defend_ability.setup_single(caster, TriggerType.DEFEND)
+
+            self.victim = target_candidate
+            return
+        
+        logging.debug(f"{caster.name} has no target to attack (range {caster.range}).")
+        self.is_done = True
+
+    def activate(self, caster: Character, *_) -> None:
+        # Search for target character, stop early if none found
+        if not self.victim:
+            self.determine_target(caster)
+            return
+        
+        if not self.on_attack_ability.is_done:
+            self.on_attack_ability.activate()
+            return
+        
+        if not self.targeting_delay.is_done:
+            self.targeting_delay.tick()
+            return
+        
+        if not self.on_defend_ability.is_done:
+            self.on_defend_ability.activate()
+            return
+
+        self.victim.damage_health(caster.damage)
+        self.victim.is_defending = False
+
+        logging.debug(f"{caster.name} attacks {self.victim.name} for {caster.damage} damage!")
+
         self.is_done = True
 
 
