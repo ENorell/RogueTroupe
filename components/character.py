@@ -27,7 +27,6 @@ class Character(ABC):
         self.is_defending = False
         self.target = None
         self.attacker = None
-        self.ability: Optional[Ability] = self.ability_type() if self.ability_type else None
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
@@ -44,10 +43,6 @@ class Character(ABC):
 
     def revive(self) -> None:
         self.health = self.max_health
-
-    def refresh_ability(self) -> None:
-        if not self.ability: return
-        self.ability.is_done = False
 
 
 class Archeryptrx(Character):

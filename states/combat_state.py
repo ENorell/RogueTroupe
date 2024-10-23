@@ -8,7 +8,7 @@ from core.state_machine import State, StateChoice
 from components.character import Character, draw_character
 from components.character_slot import CombatSlot, draw_slot
 from components.interactable import Button, draw_button, draw_text
-from components.abilities import TriggerType, BasicAttack, Delay
+from components.abilities import Ability, TriggerType, BasicAttack, Delay
 from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
 
@@ -17,22 +17,36 @@ PAUSE_TIME_S: Final[float] = 1
 CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
 
-def done_triggering_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> bool:
-    for slot in ally_slots + enemy_slots:
-        if not slot.content: continue
-        if     slot.content.is_dead(): continue
-        if not slot.content.ability: continue 
-        if not slot.content.ability.trigger == trigger_type: continue
-        if     slot.content.ability.is_done: continue
+class AbilityHandler:
+    '''
+    Handles the execution of abilities regardless of trigger
+    '''
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.ally_slots = ally_slots
+        self.enemy_slots = enemy_slots
+        self.is_done = False
+        self.abilities: dict[Character, Ability] = {}
 
-        slot.content.ability.activate(slot.content, ally_slots, enemy_slots)
-        return False # We need to iterate some more
-    return True # All abilities are done
+    def setup_all(self, trigger_type: TriggerType) -> None:
+        for slot in self.ally_slots + self.enemy_slots:
+            if not slot.content: continue
+            self.setup_single(slot.content, trigger_type)
+            
+
+    def setup_single(self, caster: Character, trigger_type: TriggerType) -> None:
+        if     caster.is_dead(): return
+        if not caster.ability_type: return 
+        if not caster.ability_type.trigger == trigger_type: return
+
+        self.abilities[caster] = caster.ability_type() # Instantiate the class here, then throw it away when we are done
 
 
-def refresh_all_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> None:
-    for character in [slot.content for slot in ally_slots + enemy_slots if slot.content and slot.content.ability and slot.content.ability.trigger == trigger_type]:
-        character.refresh_ability()
+    def activate(self) -> None:
+        for character, ability in self.abilities.items():
+            if not ability.is_done:
+                ability.activate(character, self.ally_slots, self.enemy_slots)
+                return
+        self.is_done = True
 
 
 class BattleTurn:
@@ -44,6 +58,7 @@ class BattleTurn:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         
+        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
         self.basic_attack = BasicAttack(acting_slot, ally_slots, enemy_slots)
 
         self.initial_delay = Delay(PAUSE_TIME_S)
@@ -58,6 +73,8 @@ class BattleTurn:
             logging.debug(f"{self.character.name} is dead, skipping turn")
             self.end_turn()
             return
+        
+        self.starting_abilities.setup_single(self.character, TriggerType.TURN_START)
 
 
     def end_turn(self) -> None:
@@ -66,7 +83,8 @@ class BattleTurn:
 
 
     def loop(self) -> None:
-        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.TURN_START):
+        if not self.starting_abilities.is_done:
+            self.starting_abilities.activate()
             return
 
         # Then execute attack
@@ -120,6 +138,7 @@ class BattleRound:
         self.enemy_slots = enemy_slots
         self.turn_order: list[CombatSlot] = []
         self.current_turn: Optional[BattleTurn] = None
+        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
         self.round_start_delay = Delay(PAUSE_TIME_S)
         self.round_end_delay = Delay(PAUSE_TIME_S)
         self.is_done = False
@@ -127,6 +146,7 @@ class BattleRound:
     def start_round(self) -> None:
         self.slot_turn_order: list[CombatSlot] = create_alternating_turn_order(self.ally_slots, self.enemy_slots)
         assert self.slot_turn_order # Something is wrong if this is empty at start of turn
+        self.starting_abilities.setup_all(TriggerType.ROUND_START)
         
     def start_next_turn(self) -> None:
         next_slot = self.slot_turn_order.pop(0)
@@ -138,15 +158,14 @@ class BattleRound:
     def end_round(self) -> None:
         cleanup_dead_units(self.ally_slots, self.enemy_slots)  # Clean up dead units at the end of the round
         shift_units_forward(self.ally_slots, self.enemy_slots)  # Shift units forward to fill empty slots
-        refresh_all_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START) # Reset the state of the abilities to be used again later
-        refresh_all_abilities(self.ally_slots, self.enemy_slots, TriggerType.TURN_START)
         self.is_done = True
     
     def any_turns_left(self) -> bool:
         return bool(self.slot_turn_order)
 
     def loop(self) -> None:
-        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START):
+        if not self.starting_abilities.is_done:
+            self.starting_abilities.activate()
             return
 
         if not self.round_start_delay.is_done:
@@ -190,10 +209,12 @@ class CombatState(State):
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
         self.current_round: Optional[BattleRound] = None
+        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
         self.round_counter = 0
+        self.starting_abilities.setup_all(TriggerType.COMBAT_START)
         
     def start_next_round(self) -> None:
         self.round_counter += 1
@@ -214,7 +235,8 @@ class CombatState(State):
         self.next_state = StateChoice.SHOP
 
     def loop(self, user_input: UserInput) -> None:
-        if not done_triggering_abilities(self.ally_slots, self.enemy_slots, TriggerType.COMBAT_START):
+        if not self.starting_abilities.is_done:
+            self.starting_abilities.activate()
             return
 
         if not self.current_round: # Allows us to wait for start of combat abilities, happens exactly once
