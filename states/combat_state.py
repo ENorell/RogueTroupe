@@ -1,5 +1,5 @@
 from pygame import transform
-from typing import Optional, Final
+from typing import Optional, Final, Self
 import logging
 
 from core.interfaces import UserInput
@@ -8,7 +8,7 @@ from core.state_machine import State, StateChoice
 from components.character import Character, draw_character
 from components.character_slot import CombatSlot, draw_slot
 from components.interactable import Button, draw_button, draw_text
-from components.abilities import Ability, TriggerType, Delay, distance_between
+from components.abilities import Ability, TriggerType, Delay, BasicAttack
 from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_HEIGHT, DISPLAY_WIDTH
 
@@ -17,99 +17,105 @@ PAUSE_TIME_S: Final[float] = 1
 CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 
 
+
+def get_character_ability(character: Character, trigger_type: TriggerType) -> Optional[Ability]:
+    if not character.ability_type: return
+    if not character.ability_type.trigger == trigger_type: return
+    return character.ability_type(character)
+
+def get_trigger_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> list[Ability]:
+    ability_queue: list[Ability] = []
+    for slot in ally_slots + enemy_slots:
+        if not slot.content: continue
+        if     slot.content.is_dead(): continue
+        if not slot.content.ability_type: continue 
+        if not slot.content.ability_type.trigger == trigger_type: continue
+        ability = slot.content.ability_type(slot.content)
+        ability_queue.append(ability)
+    return ability_queue
+
+def empty_ability_queue(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> list[Ability]:
+    ability_queue: list[Ability] = []
+    for slot in ally_slots + enemy_slots:
+        if not slot.content: continue
+        if not slot.content.ability_queue: continue
+        ability_queue.extend(slot.content.ability_queue[:]) # Make a shallow copy
+        slot.content.ability_queue.clear() # Empty the queue
+    return ability_queue
+
+
+def is_all_done(abilities: list[Ability]) -> bool:
+    for ability in abilities:
+        if not ability.is_done:
+            return False
+    return True
+
+def run_remaining_abilities(abilities: list[Ability], ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    for ability in abilities:
+        if not ability.is_done:
+            ability.activate(ally_slots, enemy_slots)
+
+
 class AbilityHandler:
     '''
-    Handles the execution of abilities regardless of trigger
+    Handles trigger order for a mix of combat/round start abilities and triggered abilities
     '''
+    
     def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.is_done: bool = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
-        self.is_done = False
-        self.abilities: dict[Character, Ability] = {}
+        self.planned_abilities: list[Ability] = []
+        self.triggered_abilities: list[Ability] = []
+        
 
-    def setup_all(self, trigger_type: TriggerType) -> None:
-        for slot in self.ally_slots + self.enemy_slots:
-            if not slot.content: continue
-            self.setup_single(slot.content, trigger_type)
-            
+    @classmethod
+    def from_trigger(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type) -> Self:
+        instance = cls(ally_slots, enemy_slots)
+        instance.planned_abilities = get_trigger_abilities(ally_slots, enemy_slots, trigger_type)
+        instance.next_ability()
+        return instance
+    
+    @classmethod
+    def from_abilities(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], abilities: list[Ability]) -> Self:
+        instance = cls(ally_slots, enemy_slots)
+        instance.planned_abilities = abilities
+        instance.next_ability()
+        return instance
+    
+    @classmethod
+    def turn_abilities(cls, caster: Character, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
+        instance = cls(ally_slots, enemy_slots)
+        basic_attack = BasicAttack(caster)
+        starting_ability = get_character_ability(caster, TriggerType.TURN_START)
+        instance.planned_abilities = [starting_ability, basic_attack] if starting_ability else [basic_attack]
+        instance.next_ability()
+        return instance
 
-    def setup_single(self, caster: Character, trigger_type: TriggerType) -> None:
-        if     caster.is_dead(): return
-        if not caster.ability_type: return 
-        if not caster.ability_type.trigger == trigger_type: return
-
-        self.abilities[caster] = caster.ability_type() # Instantiate the class here, then throw it away when we are done
-
+    def next_ability(self) -> None:
+        if not self.planned_abilities:
+            self.is_done = True
+            return
+        self.current_ability = self.planned_abilities.pop(0)
 
     def activate(self) -> None:
-        for character, ability in self.abilities.items():
-            if not ability.is_done:
-                ability.activate(character, self.ally_slots, self.enemy_slots)
-                return
-        self.is_done = True
+        self.triggered_abilities.extend( empty_ability_queue(self.ally_slots, self.enemy_slots) )
 
-
-
-class BasicAttack(Ability):
-    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
-        super().__init__()
-        self.acting_slot = acting_slot
-        self.ally_slots = ally_slots
-        self.enemy_slots = enemy_slots
-    
-        self.targeting_delay = Delay(1)
-        self.victim: Optional[Character] = None
-        self.on_attack_ability = AbilityHandler(ally_slots, enemy_slots)
-        self.on_defend_ability = AbilityHandler(ally_slots, enemy_slots)
-
-    def determine_target(self, caster: Character) -> None:
-        self.on_attack_ability.setup_single(caster, TriggerType.ATTACK)
-
-        defender_slots: list[CombatSlot] = self.ally_slots if self.acting_slot in self.enemy_slots else self.enemy_slots
-
-        for target_slot in reversed( defender_slots ): # Prioritize slots farther away?
-            if not target_slot.content: continue
-            target_candidate = target_slot.content
-            if target_candidate.is_dead(): continue
-            if not caster.range >= distance_between(self.acting_slot, target_slot): continue
-
-            target_candidate.is_defending = True
-            self.on_defend_ability.setup_single(caster, TriggerType.DEFEND)
-
-            self.victim = target_candidate
+        if not self.current_ability.is_done:
+            self.current_ability.activate(self.ally_slots, self.enemy_slots)
             return
         
-        logging.debug(f"{caster.name} has no target to attack (range {caster.range}).")
-        self.is_done = True
-
-    def activate(self, caster: Character, *_) -> None:
-        # Search for target character, stop early if none found
-        if not self.victim:
-            self.determine_target(caster)
-            return
-        
-        if not self.on_attack_ability.is_done:
-            self.on_attack_ability.activate()
-            return
-        
-        if not self.targeting_delay.is_done:
-            self.targeting_delay.tick()
-            return
-        
-        if not self.on_defend_ability.is_done:
-            self.on_defend_ability.activate()
+        if not is_all_done(self.triggered_abilities):
+            run_remaining_abilities(self.triggered_abilities, self.ally_slots, self.enemy_slots)
             return
 
-        self.victim.damage_health(caster.damage)
-        self.victim.is_defending = False
+        self.next_ability()
 
-        logging.debug(f"{caster.name} attacks {self.victim.name} for {caster.damage} damage!")
-
-        self.is_done = True
 
 
 class BattleTurn:
     def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.is_done = False
         self.acting_slot = acting_slot
         assert acting_slot.content # We should never be here if it was empty
         self.character: Character = acting_slot.content
@@ -117,13 +123,9 @@ class BattleTurn:
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         
-        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
-        self.basic_attack = BasicAttack(acting_slot, ally_slots, enemy_slots)
+        self.turn_abilities = AbilityHandler.turn_abilities(self.character, self.ally_slots, self.enemy_slots)
 
-        self.initial_delay = Delay(PAUSE_TIME_S)
         self.post_attack_delay = Delay(PAUSE_TIME_S)  # Delay after attack or ability
-        self.is_done = False
-
 
     def start_turn(self) -> None:
         logging.debug(f"Starting turn for {self.character.name} {"(Ally)" if self.acting_slot in self.ally_slots else "(Enemy)"}")
@@ -132,9 +134,6 @@ class BattleTurn:
             logging.debug(f"{self.character.name} is dead, skipping turn")
             self.end_turn()
             return
-        
-        self.starting_abilities.setup_single(self.character, TriggerType.TURN_START)
-
 
     def end_turn(self) -> None:
         # Potential end of turn effects
@@ -142,13 +141,9 @@ class BattleTurn:
 
 
     def loop(self) -> None:
-        if not self.starting_abilities.is_done:
-            self.starting_abilities.activate()
-            return
-
-        # Then execute attack
-        if not self.basic_attack.is_done:
-            self.basic_attack.activate(self.character)
+        # subscribe to stream of new triggered abilities for characters
+        if not self.turn_abilities.is_done:
+            self.turn_abilities.activate()
             return
         
         # Delay slightly after attack
@@ -193,19 +188,18 @@ def shift_units_forward(ally_slots: list[CombatSlot], enemy_slots: list[CombatSl
 
 class BattleRound:
     def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        self.is_done = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.turn_order: list[CombatSlot] = []
         self.current_turn: Optional[BattleTurn] = None
-        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
         self.round_start_delay = Delay(PAUSE_TIME_S)
         self.round_end_delay = Delay(PAUSE_TIME_S)
-        self.is_done = False
 
     def start_round(self) -> None:
         self.slot_turn_order: list[CombatSlot] = create_alternating_turn_order(self.ally_slots, self.enemy_slots)
         assert self.slot_turn_order # Something is wrong if this is empty at start of turn
-        self.starting_abilities.setup_all(TriggerType.ROUND_START)
+        self.starting_abilities = AbilityHandler.from_trigger(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START)
         
     def start_next_turn(self) -> None:
         next_slot = self.slot_turn_order.pop(0)
@@ -268,12 +262,11 @@ class CombatState(State):
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
         self.current_round: Optional[BattleRound] = None
-        self.starting_abilities = AbilityHandler(ally_slots, enemy_slots)
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
         self.round_counter = 0
-        self.starting_abilities.setup_all(TriggerType.COMBAT_START)
+        self.starting_abilities = AbilityHandler.from_trigger(self.ally_slots, self.enemy_slots, TriggerType.COMBAT_START) 
         
     def start_next_round(self) -> None:
         self.round_counter += 1

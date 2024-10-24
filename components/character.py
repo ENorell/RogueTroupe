@@ -17,7 +17,7 @@ class Character(ABC):
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    ability_type: Optional[type[Ability]] = None # Wait with instantiation until initializer due to mutability
+    ability_type: Optional[type[Ability]] = None
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
@@ -27,10 +27,29 @@ class Character(ABC):
         self.is_defending = False
         self.target = None
         self.attacker = None
+        self.ability_queue: list[Ability] = []
+
+    def attack(self) -> None:
+        self.queue_ability(TriggerType.ATTACK)
 
     def damage_health(self, damage: int) -> None:
         self.health = max(self.health - damage, 0)
-        if self.health == 0: logging.debug(f"{self.name} died")
+        if self.health == 0: 
+            self.die()
+            return
+        self.queue_ability(TriggerType.DEFEND)
+
+    def queue_ability(self, trigger_type: TriggerType) -> None:
+        #if self.is_dead(): return
+        if not self.ability_type: return
+        if not self.ability_type.trigger == trigger_type: return
+        ability = self.ability_type(self)
+        self.ability_queue.append(ability)
+
+    def die(self) -> None:
+        #self.ability_queue = [] # Cancel other potential abilities in queue
+        self.queue_ability(TriggerType.DEATH)
+        logging.debug(f"{self.name} died")
 
     def is_dead(self) -> bool:
         return self.health == 0
@@ -104,7 +123,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = CorpseExplotion
 
 
 class Tripiketops(Character):
@@ -114,7 +133,7 @@ class Tripiketops(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_PIKEMAN
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Enrage
 
 
 class Pterapike(Character):
