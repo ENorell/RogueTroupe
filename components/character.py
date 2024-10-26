@@ -22,7 +22,7 @@ class Character(ABC):
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
     def __init__(self) -> None:
-        self.health = self.max_health
+        self._health = self.max_health
         self.is_attacking = False
         self.is_defending = False
         self.target = None
@@ -30,42 +30,53 @@ class Character(ABC):
         self.ability_queue: list[Ability] = []
 
     def attack(self) -> None:
-        self.queue_ability(TriggerType.ATTACK)
+        self.queue_ability(TriggerType.ATTACK, attacker=None)
 
-    def damage_health(self, damage: int) -> None:
-        self.health = max(self.health - damage, 0)
-        if self.health == 0: 
-            self.die()
+    def do_damage(self, amount: int, attacker: 'Character') -> None:
+        if self.is_dead():
+            logging.debug(f"{attacker} attacks {self.name}, but they are already dead")
             return
-        self.queue_ability(TriggerType.DEFEND)
+        self.lose_health(amount)
+        if self.health == 0:
+            self.die(attacker)
+            return
+        self.queue_ability(TriggerType.DEFEND, attacker)
 
-    def queue_ability(self, trigger_type: TriggerType) -> None:
+    def lose_health(self, damage: int) -> None:
+        self._health = max(self._health - damage, 0)
+
+    def queue_ability(self, trigger_type: TriggerType, attacker: Optional['Character']) -> None:
         #if self.is_dead(): return
         if not self.ability_type: return
         if not self.ability_type.trigger == trigger_type: return
-        ability = self.ability_type(self)
+        ability = self.ability_type(self, attacker)
         self.ability_queue.append(ability)
 
-    def die(self) -> None:
+    def die(self, attacker: 'Character') -> None:
         #self.ability_queue = [] # Cancel other potential abilities in queue
-        self.queue_ability(TriggerType.DEATH)
-        logging.debug(f"{self.name} died")
+        self.queue_ability(TriggerType.DEATH, attacker)
+
+        if attacker is self: logging.debug(f"{self.name} killed themself")
+        else: logging.debug(f"{attacker.name} killed {self.name}")
 
     def is_dead(self) -> bool:
-        return self.health == 0
+        return self._health == 0
     
     def restore_health(self, healing: int) -> None:
-        self.health = min(self.health + healing, self.max_health)
+        self._health = min(self._health + healing, self.max_health)
 
     def raise_max_health(self, amount: int) -> None:
         self.max_health += amount # Shared between instances?...
 
     def is_full_health(self) -> bool:
-        return self.health == self.max_health
+        return self._health == self.max_health
 
     def revive(self) -> None:
-        self.health = self.max_health
+        self._health = self.max_health
 
+    @property
+    def health(self) -> int:
+        return self._health
 
 class Archeryptrx(Character):
     '''A simple archer with upfront damage and range'''
@@ -93,7 +104,7 @@ class Tankylosaurus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_CLUB
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Parry
 
 
 class Macedon(Character):
@@ -123,7 +134,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = CorpseExplotion
+    ability_type: Optional[type[Ability]] = CorpseExplosion
 
 
 class Tripiketops(Character):

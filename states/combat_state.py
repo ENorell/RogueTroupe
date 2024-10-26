@@ -21,7 +21,7 @@ CHARACTER_HOVER_SCALE_RATIO: Final[float] = 1.5
 def get_character_ability(character: Character, trigger_type: TriggerType) -> Optional[Ability]:
     if not character.ability_type: return
     if not character.ability_type.trigger == trigger_type: return
-    return character.ability_type(character)
+    return character.ability_type.from_plan(character)
 
 def get_trigger_abilities(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type: TriggerType) -> list[Ability]:
     ability_queue: list[Ability] = []
@@ -30,7 +30,7 @@ def get_trigger_abilities(ally_slots: list[CombatSlot], enemy_slots: list[Combat
         if     slot.content.is_dead(): continue
         if not slot.content.ability_type: continue 
         if not slot.content.ability_type.trigger == trigger_type: continue
-        ability = slot.content.ability_type(slot.content)
+        ability = slot.content.ability_type.from_plan(slot.content)
         ability_queue.append(ability)
     return ability_queue
 
@@ -57,17 +57,16 @@ def run_remaining_abilities(abilities: list[Ability], ally_slots: list[CombatSlo
 
 
 class AbilityHandler:
-    '''
+    """
     Handles trigger order for a mix of combat/round start abilities and triggered abilities
-    '''
-    
+    """
     def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
         self.is_done: bool = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
         self.planned_abilities: list[Ability] = []
         self.triggered_abilities: list[Ability] = []
-        
+        self.current_ability: Optional[Ability] = None
 
     @classmethod
     def from_trigger(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type) -> Self:
@@ -86,7 +85,7 @@ class AbilityHandler:
     @classmethod
     def turn_abilities(cls, caster: Character, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
         instance = cls(ally_slots, enemy_slots)
-        basic_attack = BasicAttack(caster)
+        basic_attack = BasicAttack.from_plan(caster)
         starting_ability = get_character_ability(caster, TriggerType.TURN_START)
         instance.planned_abilities = [starting_ability, basic_attack] if starting_ability else [basic_attack]
         instance.next_ability()
@@ -101,6 +100,7 @@ class AbilityHandler:
     def activate(self) -> None:
         self.triggered_abilities.extend( empty_ability_queue(self.ally_slots, self.enemy_slots) )
 
+        assert self.current_ability
         if not self.current_ability.is_done:
             self.current_ability.activate(self.ally_slots, self.enemy_slots)
             return
@@ -155,7 +155,7 @@ class BattleTurn:
             
 
 def create_alternating_turn_order(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> list[CombatSlot]:
-    return [slot for pair in zip(ally_slots, enemy_slots) for slot in pair if slot.content and not slot.content.is_dead()]
+    return [slot for pair in zip(ally_slots, enemy_slots) for slot in pair if slot.content and not slot.content.is_dead()] + ally_slots[len(enemy_slots):] + enemy_slots[len(ally_slots):]
 
 def create_simple_turn_order(ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> list[CombatSlot]:
     return [slot for slot in ally_slots + enemy_slots if slot.content and not slot.content.is_dead() ]
@@ -262,10 +262,10 @@ class CombatState(State):
         self.enemy_slots = enemy_slots
         self.continue_button = Button((400, 500), "Continue...")
         self.current_round: Optional[BattleRound] = None
+        self.round_counter = 0
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
-        self.round_counter = 0
         self.starting_abilities = AbilityHandler.from_trigger(self.ally_slots, self.enemy_slots, TriggerType.COMBAT_START) 
         
     def start_next_round(self) -> None:
