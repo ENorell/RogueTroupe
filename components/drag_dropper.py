@@ -56,15 +56,26 @@ class DragDropRenderer(PygameRenderer):
 
     def draw_frame(self, drag_dropper: DragDropper):
 
+        # Draw the slots first
         for slot in drag_dropper.slots:
             draw_slot(self.frame, slot)
         
-        #make sure the characters are drawn on top of slots
+        # Draw characters on top of slots, except for the hovered slot
+        hovered_slot = None
         for slot in drag_dropper.slots:
-            if not slot.content: continue
+            if not slot.content:
+                continue
+            
+            if slot.is_hovered:
+                hovered_slot = slot  # Save the hovered slot for later
+                continue
 
             position = drag_dropper.user_input.mouse_position if slot is drag_dropper.detached_slot else slot.center_coordinate
-
             scale_ratio = 1.5 if slot.is_hovered else 1
 
-            draw_character(self.frame, position, slot.content, scale_ratio = scale_ratio, slot_is_hovered = slot.is_hovered)
+            draw_character(self.frame, position, slot.content, scale_ratio=scale_ratio, slot_is_hovered=slot.is_hovered)
+        
+        # Draw the hovered slot's character last to ensure it's on top
+        if hovered_slot:
+            position = drag_dropper.user_input.mouse_position if hovered_slot is drag_dropper.detached_slot else hovered_slot.center_coordinate
+            draw_character(self.frame, position, hovered_slot.content, scale_ratio=1.5, slot_is_hovered=True)

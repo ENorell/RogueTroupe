@@ -22,6 +22,8 @@ def test_game_1000_loops() -> None:
         test_game.loop(user_input)
 
 
+
+
 slot = CombatSlot((0, 0), 0, (0, 0, 0))
 
 def test_character_heal_ability() -> None:

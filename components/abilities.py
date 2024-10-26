@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import Optional, Protocol, Sequence, Self
 import random
 from enum import Enum, auto
@@ -13,6 +12,7 @@ class CharacterInterface(Protocol): # Put an interface to avoid circular imports
     name: str
     range: int
     is_defending: bool
+    combat_indicator: str
 
     def do_damage(self, amount: int, attacker: Self) -> None:
         ...
@@ -61,14 +61,6 @@ class TriggerType(Enum):
     DEATH = auto()
 
 
-@dataclass(frozen=True)
-class AbilityContext:
-    """Contains information about the state that triggered the ability"""
-    amount: int
-    caster: CharacterInterface
-    triggerer: Optional[CharacterInterface]
-
-
 class Ability(ABC):
     name: str
     description: str
@@ -86,6 +78,7 @@ class Ability(ABC):
     @abstractmethod
     def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
         ...
+
 
 
 # This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
@@ -108,7 +101,9 @@ class BasicAttack(Ability):
         super().__init__(caster, triggerer)
 
         self.targeting_delay = Delay(1)
+        self.waiting_delay = Delay(0.3)
         self.victim: Optional[CharacterInterface] = None
+        self.waiting: bool = False
 
     def determine_target(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
         acting_slot = get_character_slot(self.caster, [*ally_slots, *enemy_slots])
@@ -125,7 +120,15 @@ class BasicAttack(Ability):
 
             self.victim = target_candidate
             return
-        
+
+        if not self.waiting_delay.is_done:
+            self.caster.combat_indicator = "Waiting"
+            self.waiting = True
+            self.waiting_delay.tick()
+            return
+
+        self.caster.combat_indicator = None
+
         logging.debug(f"{self.caster.name} has no target to attack (range {self.caster.range}).")
         self.is_done = True
 
@@ -135,15 +138,31 @@ class BasicAttack(Ability):
             self.determine_target(ally_slots, enemy_slots)
             return
         
+        if self.waiting:
+            if not self.waiting_delay.is_done:
+                self.caster.combat_indicator = "Waiting"
+                self.waiting_delay.tick()
+                return
+            else:
+                self.caster.combat_indicator = None
+                self.is_done = True
+                self.waiting = False
+                return
+
+        self.victim.combat_indicator = f"-{self.caster.damage}"
+        self.caster.combat_indicator = "Attack!"
+
         if not self.targeting_delay.is_done:
             self.targeting_delay.tick()
             return
-        
+
         logging.debug(f"{self.caster.name} attacks {self.victim.name} for {self.caster.damage} damage!")
         self.caster.attack()
 
         self.victim.do_damage(self.caster.damage, self.caster)
         self.victim.is_defending = False
+        self.victim.combat_indicator = None
+        self.caster.combat_indicator = None
 
         self.is_done = True
 
@@ -158,6 +177,7 @@ class Rampage(Ability):
         self.caster.damage += 1
         logging.debug(f"{self.caster.name} uses Rampage, gaining 1 attack.")
         self.is_done = True
+
 
 
 class Volley(Ability):
