@@ -1,10 +1,10 @@
-import pytest
-
-from states.game import Game
-from core.input_listener import CrazyInputListener
+from states.game import Game, create_enemy_slots, create_ally_slots
+from states.combat_state import CombatState
+from core.input_listener import CrazyInputListener, NoInputListener
 
 from components.character import Healamimus, Spinoswordaus, Tripiketops, Dilophmageras, Character
 from components.abilities import *
+from components import character
 from components.character_slot import CharacterSlot, CombatSlot
 from states.combat_state import BattleTurn, BattleRound, AbilityHandler
 
@@ -21,7 +21,26 @@ def test_game_1000_loops() -> None:
 
         test_game.loop(user_input)
 
+def test_combat_1000_loops() -> None:
+    ally_slots = create_ally_slots()
+    enemy_slots = create_enemy_slots()
+    ally_slots[0].content = character.Macedon()
+    ally_slots[1].content = character.Macedon()
+    ally_slots[2].content = character.Healamimus()
+    ally_slots[3].content = character.Archeryptrx()
+    enemy_slots[0].content = character.Dilophmageras()
+    enemy_slots[1].content = character.Tripiketops()
+    enemy_slots[2].content = character.Tripiketops()
+    enemy_slots[3].content = character.Dilophmageras()
 
+    combat_state = CombatState(ally_slots, enemy_slots)
+    combat_state.start_state()
+    input_listener = NoInputListener()
+
+    for _ in range(1000):
+        user_input = input_listener.capture()
+
+        combat_state.loop(user_input)
 
 
 slot = CombatSlot((0, 0), 0, (0, 0, 0))
@@ -31,12 +50,12 @@ def test_character_heal_ability() -> None:
     Test that the round-start healing ability works
     """
 
-    character = Healamimus()
-    slot.content = character
+    unit = Healamimus()
+    slot.content = unit
 
-    character.lose_health(2)
+    unit.lose_health(2)
 
-    assert character.ability_type
+    assert unit.ability_type
 
     battle_round = BattleRound([slot], [])
 
@@ -45,13 +64,13 @@ def test_character_heal_ability() -> None:
     for _ in range(100):
         battle_round.loop()
 
-    assert character.health == Healamimus.max_health - 1
+    assert unit.health == Healamimus.max_health - 1
 
 
 def test_character_rampage_ability() -> None:
 
-    character = Spinoswordaus()
-    slot.content = character
+    unit = Spinoswordaus()
+    slot.content = unit
 
     turn = BattleTurn(slot, [slot], [])
     turn.start_turn()
@@ -59,32 +78,32 @@ def test_character_rampage_ability() -> None:
     for _ in range(100):
         turn.loop()
 
-    assert character.damage == Spinoswordaus.damage + 1
+    assert unit.damage == Spinoswordaus.damage + 1
 
 
 def test_enrage_ability() -> None:
-    char = Tripiketops()
+    unit = Tripiketops()
 
-    slot.content = char
+    slot.content = unit
 
-    handler = AbilityHandler.turn_abilities(char, [slot], [])
+    handler = AbilityHandler.turn_abilities(unit, [slot], [])
 
     # start execution of planned ability
     handler.activate()
 
     # Cause on-damage triggers
-    char.do_damage(1, char)
+    unit.do_damage(1, unit)
 
     handler.activate()
 
-    char.do_damage(1, char)
+    unit.do_damage(1, unit)
 
     # Flush out the triggered abilities
     for _ in range(100):
         handler.activate()
 
     # Finally should have enraged twice
-    assert char.damage == Tripiketops.damage + 2
+    assert unit.damage == Tripiketops.damage + 2
 
 
 def test_corpse_explosion_ability() -> None:
@@ -95,14 +114,14 @@ def test_corpse_explosion_ability() -> None:
     enemy_character = Spinoswordaus()
     enemy_slot.content = enemy_character
 
-    character = Dilophmageras()
-    slot.content = character
+    unit = Dilophmageras()
+    slot.content = unit
 
     turn = BattleTurn(slot, [slot], [enemy_slot])
     turn.start_turn()
 
     # Kill the character
-    character.do_damage(100, enemy_character)
+    unit.do_damage(100, enemy_character)
 
     for _ in range(100):
         turn.loop()
@@ -125,8 +144,8 @@ def test_parry_ability() -> None:
     attack_character = AttackCharacter()
     attack_slot.content = attack_character
 
-    character = ParryCharacter()
-    slot.content = character
+    unit = ParryCharacter()
+    slot.content = unit
 
     # The attacker attacks once and is itself damaged
     turn = BattleTurn(attack_slot, [slot], [attack_slot])
