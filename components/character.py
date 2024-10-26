@@ -29,39 +29,67 @@ class Character(ABC):
     max_health: int = 5
     damage: int = 2
     range: int = 1
-    ability_type: Optional[type[Ability]] = None # Wait with instantiation until initializer due to mutability
+    ability_type: Optional[type[Ability]] = None
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
     def __init__(self) -> None:
-        self.health = self.max_health
+        self._health = self.max_health
         self.is_attacking = False
         self.is_defending = False
         self.target = None
         self.attacker = None
         self.combat_indicator = None
-        self.ability: Optional[Ability] = self.ability_type() if self.ability_type else None
+        self.ability_queue: list[Ability] = []
 
-    def damage_health(self, damage: int) -> None:
-        self.health = max(self.health - damage, 0)
-        if self.health == 0: logging.debug(f"{self.name} died")
+    def attack(self) -> None:
+        self.queue_ability(TriggerType.ATTACK, attacker=None)
+
+    def do_damage(self, amount: int, attacker: 'Character') -> None:
+        if self.is_dead():
+            logging.debug(f"{attacker} attacks {self.name}, but they are already dead")
+            return
+        self.lose_health(amount)
+        if self.health == 0:
+            self.die(attacker)
+            return
+        self.queue_ability(TriggerType.DEFEND, attacker)
+
+    def lose_health(self, damage: int) -> None:
+        self._health = max(self._health - damage, 0)
+
+    def queue_ability(self, trigger_type: TriggerType, attacker: Optional['Character']) -> None:
+        #if self.is_dead(): return
+        if not self.ability_type: return
+        if not self.ability_type.trigger == trigger_type: return
+        ability = self.ability_type(self, attacker)
+        self.ability_queue.append(ability)
+
+    def die(self, attacker: 'Character') -> None:
+        #self.ability_queue = [] # Cancel other potential abilities in queue
+        self.queue_ability(TriggerType.DEATH, attacker)
+
+        if attacker is self: logging.debug(f"{self.name} killed themself")
+        else: logging.debug(f"{attacker.name} killed {self.name}")
 
     def is_dead(self) -> bool:
-        return self.health == 0
+        return self._health == 0
     
     def restore_health(self, healing: int) -> None:
-        self.health = min(self.health + healing, self.max_health)
+        self._health = min(self._health + healing, self.max_health)
+
+    def raise_max_health(self, amount: int) -> None:
+        self.max_health += amount # Shared between instances?...
 
     def is_full_health(self) -> bool:
-        return self.health == self.max_health
+        return self._health == self.max_health
 
     def revive(self) -> None:
-        self.health = self.max_health
+        self._health = self.max_health
 
-    def refresh_ability(self) -> None:
-        if not self.ability: return
-        self.ability.is_done = False
-
+    @property
+    def health(self) -> int:
+        return self._health
 
 class Archeryptrx(Character):
     '''A simple archer with upfront damage and range'''
@@ -89,7 +117,7 @@ class Tankylosaurus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_CLUB
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Parry
 
 
 class Macedon(Character):
@@ -99,7 +127,7 @@ class Macedon(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_CREST
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Devour
 
 
 class Healamimus(Character):
@@ -119,7 +147,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = CorpseExplosion
 
 
 class Tripiketops(Character):
@@ -129,7 +157,7 @@ class Tripiketops(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_PIKEMAN
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = Enrage
 
 
 class Pterapike(Character):
@@ -189,7 +217,7 @@ def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_
         draw_tooltip(frame, character, mid_bottom, scale_ratio)
 
 @lru_cache(maxsize=128)
-def get_scaled_image(image_key: str, size: tuple[int, int], flip: bool = False) -> Surface:
+def get_scaled_image(image_key: ImageChoice, size: tuple[int, int], flip: bool = False) -> Surface:
     character_image = IMAGES[image_key].convert_alpha()
     character_image = pygame.transform.scale(character_image, size)
     if flip:
@@ -245,7 +273,7 @@ def draw_range_icons(frame: Surface, character: Character, tooltip_rect: Rect, s
         frame.blit(character_image, (start_x, tooltip_rect.top + range_indicator_offset - character_icon_size / 2))
 
 def draw_character_ability(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
-    if character.ability:
+    if character.ability_type:
         ability_text = f"{character.ability_type.name} : {TRIGGER_TYPE_DESCRIPTIONS.get(character.ability_type.trigger, 'Unknown Trigger')}"
         ability_desc = f"{character.ability_type.description}"
         draw_text(ability_text, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 125), scale_ratio, "pixel_font")

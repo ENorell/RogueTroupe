@@ -4,6 +4,21 @@ from keyboard import is_pressed
 from core.interfaces import UserInput, InputListener
 
 
+class NoInputListener(InputListener):
+    """
+    Never produce any input
+    """
+
+    def capture(self) -> UserInput:
+        return UserInput(
+            is_quit = False,
+            is_mouse1_down = False,
+            is_mouse1_up = False,
+            is_space_key_down = False,
+            mouse_position = (0,0)
+        )
+
+
 class PygameInputListener(InputListener):
     """
     Collect user input from pygame's built in event queue and functions.
