@@ -1,3 +1,4 @@
+from __future__ import annotations
 import pygame
 from abc import ABC
 from typing import Optional
@@ -39,13 +40,13 @@ class Character(ABC):
         self.is_defending = False
         self.target = None
         self.attacker = None
-        self.combat_indicator = None
+        self.combat_indicator: Optional[str] = None
         self.ability_queue: list[Ability] = []
 
     def attack(self) -> None:
         self.queue_ability(TriggerType.ATTACK, attacker=None)
 
-    def do_damage(self, amount: int, attacker: 'Character') -> None:
+    def do_damage(self, amount: int, attacker: Character) -> None:
         if self.is_dead():
             logging.debug(f"{attacker} attacks {self.name}, but they are already dead")
             return
@@ -58,15 +59,13 @@ class Character(ABC):
     def lose_health(self, damage: int) -> None:
         self._health = max(self._health - damage, 0)
 
-    def queue_ability(self, trigger_type: TriggerType, attacker: Optional['Character']) -> None:
-        #if self.is_dead(): return
+    def queue_ability(self, trigger_type: TriggerType, attacker: Optional[Character]) -> None:
         if not self.ability_type: return
         if not self.ability_type.trigger == trigger_type: return
         ability = self.ability_type(self, attacker)
         self.ability_queue.append(ability)
 
     def die(self, attacker: 'Character') -> None:
-        #self.ability_queue = [] # Cancel other potential abilities in queue
         self.queue_ability(TriggerType.DEATH, attacker)
 
         if attacker is self: logging.debug(f"{self.name} killed themself")
@@ -91,8 +90,9 @@ class Character(ABC):
     def health(self) -> int:
         return self._health
 
+
 class Archeryptrx(Character):
-    '''A simple archer with upfront damage and range'''
+    """A simple archer with upfront damage and range"""
     name: str = "Archeryptrx"
     max_health: int = 3
     damage: int = 1
@@ -101,7 +101,7 @@ class Archeryptrx(Character):
     ability_type: Optional[type[Ability]] = Volley
 
 class Stabiraptor(Character):
-    '''An assassin focussed on eliminating dangerous enemies'''
+    """An assassin focussed on eliminating dangerous enemies"""
     name: str = "Stabiraptor"
     max_health: int = 3
     damage: int = 2
@@ -111,7 +111,7 @@ class Stabiraptor(Character):
 
 
 class Tankylosaurus(Character):
-    '''A tanky blocking unit that can absorb powerful attacks'''
+    """A tanky blocking unit that can absorb powerful attacks"""
     name: str = "Ankylo"
     max_health: int = 7
     damage: int = 1
@@ -121,7 +121,7 @@ class Tankylosaurus(Character):
 
 
 class Macedon(Character):
-    '''a balanced fighter, can render enemies unable to attack'''
+    """a balanced fighter, can render enemies unable to attack"""
     name: str = "Macedon"
     max_health: int = 4
     damage: int = 2
@@ -131,7 +131,7 @@ class Macedon(Character):
 
 
 class Healamimus(Character):
-    '''A healer, helps sustain allies'''
+    """A healer, helps sustain allies"""
     name: str = "Healamimus"
     max_health: int = 4
     damage: int = 1
@@ -141,17 +141,17 @@ class Healamimus(Character):
 
 
 class Dilophmageras(Character):
-    '''A long range mage with a penetrating attack'''
+    """A long range mage with a penetrating attack"""
     name: str = "Dilophmageras"
     max_health: int = 3
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = CorpseExplosion
+    ability_type: Optional[type[Ability]] = AcidBurst
 
 
 class Tripiketops(Character):
-    '''A tanky unit that deals damage when attacked'''
+    """A tanky unit that deals damage when attacked"""
     name: str = "Tripiketops"
     max_health: int = 6
     damage: int = 1
@@ -161,7 +161,7 @@ class Tripiketops(Character):
 
 
 class Pterapike(Character):
-    '''A versatile unit that targets the enemies back units'''
+    """A versatile unit that targets the enemies back units"""
     name: str = "Pterapike"
     max_health: int = 4
     damage: int = 1
@@ -170,7 +170,7 @@ class Pterapike(Character):
     ability_type: Optional[type[Ability]] = None
 
 class Spinoswordaus(Character):
-    '''A powerful warrior that becomes lethal as the battle progresses'''
+    """A powerful warrior that becomes lethal as the battle progresses"""
     name: str = "Spinoswordaus"
     max_health: int = 6
     damage: int = 1
@@ -179,22 +179,24 @@ class Spinoswordaus(Character):
     ability_type: Optional[type[Ability]] = Rampage
 
 class Ateratops(Character):
-    '''A mage that enhances allied health'''
+    """A mage that enhances allied health"""
     name: str = "Ateratops"
     max_health: int = 3
     damage: int = 2
     range: int = 1  # Melee range
     character_image = ImageChoice.CHARACTER_SUMMONER
-    ability_type: Optional[type[Ability]] = None
+    ability_type: Optional[type[Ability]] = CorpseExplosion
 
 class Velocirougue(Character):
-    '''a dual wielding rogue, high damage but hurts self on attack, relies on quick victory'''
+    """a dual wielding rogue, high damage but hurts self on attack, relies on quick victory"""
     name: str = "Velocirougue"
     max_health: int = 5
     damage: int = 3
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
     ability_type: Optional[type[Ability]] = Reckless
+
+
 from functools import lru_cache
 
 @lru_cache(maxsize=128)

@@ -60,34 +60,27 @@ class AbilityHandler:
     """
     Handles trigger order for a mix of combat/round start abilities and triggered abilities
     """
-    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], planned_abilities: list[Ability]) -> None:
         self.is_done: bool = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
-        self.planned_abilities: list[Ability] = []
+        self.planned_abilities: list[Ability] = planned_abilities
         self.triggered_abilities: list[Ability] = []
         self.current_ability: Optional[Ability] = None
 
     @classmethod
     def from_trigger(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], trigger_type) -> Self:
-        instance = cls(ally_slots, enemy_slots)
-        instance.planned_abilities = get_trigger_abilities(ally_slots, enemy_slots, trigger_type)
-        instance.next_ability()
-        return instance
-    
-    @classmethod
-    def from_abilities(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], abilities: list[Ability]) -> Self:
-        instance = cls(ally_slots, enemy_slots)
-        instance.planned_abilities = abilities
+        planned_abilities = get_trigger_abilities(ally_slots, enemy_slots, trigger_type)
+        instance = cls(ally_slots, enemy_slots, planned_abilities)
         instance.next_ability()
         return instance
     
     @classmethod
     def turn_abilities(cls, caster: Character, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
-        instance = cls(ally_slots, enemy_slots)
         basic_attack = BasicAttack.from_plan(caster)
         starting_ability = get_character_ability(caster, TriggerType.TURN_START)
-        instance.planned_abilities = [starting_ability, basic_attack] if starting_ability else [basic_attack]
+        planned_abilities: list[Ability] = [starting_ability, basic_attack] if starting_ability else [basic_attack]
+        instance = cls(ally_slots, enemy_slots, planned_abilities)
         instance.next_ability()
         return instance
 
@@ -114,31 +107,26 @@ class AbilityHandler:
 
 
 class BattleTurn:
-    def __init__(self, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    def __init__(self, character: Character, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], turn_abilities: AbilityHandler) -> None:
         self.is_done = False
         self.acting_slot = acting_slot
-        assert acting_slot.content # We should never be here if it was empty
-        self.character: Character = acting_slot.content
-        
+        self.character = character
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
-        
-        self.turn_abilities = AbilityHandler.turn_abilities(self.character, self.ally_slots, self.enemy_slots)
-
+        self.turn_abilities = turn_abilities
         self.post_attack_delay = Delay(PAUSE_TIME_S)  # Delay after attack or ability
 
-    def start_turn(self) -> None:
-        logging.debug(f"Starting turn for {self.character.name} {"(Ally)" if self.acting_slot in self.ally_slots else "(Enemy)"}")
-
-        if self.character.is_dead():
-            logging.debug(f"{self.character.name} is dead, skipping turn")
-            self.end_turn()
-            return
+    @classmethod
+    def start_new_turn(cls, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
+        assert acting_slot.content  # We should never be here if it was empty
+        character: Character = acting_slot.content
+        turn_abilities: AbilityHandler = AbilityHandler.turn_abilities(character, ally_slots, enemy_slots)
+        new_turn = cls(character, acting_slot, ally_slots, enemy_slots, turn_abilities)
+        return new_turn
 
     def end_turn(self) -> None:
         # Potential end of turn effects
         self.is_done = True
-
 
     def loop(self) -> None:
         # subscribe to stream of new triggered abilities for characters
@@ -187,26 +175,33 @@ def shift_units_forward(ally_slots: list[CombatSlot], enemy_slots: list[CombatSl
 
 
 class BattleRound:
-    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot], slot_turn_order: list[CombatSlot], starting_abilities: AbilityHandler) -> None:
         self.is_done = False
         self.ally_slots = ally_slots
         self.enemy_slots = enemy_slots
-        self.turn_order: list[CombatSlot] = []
+        self.slot_turn_order: list[CombatSlot] = slot_turn_order
+        self.starting_abilities: AbilityHandler = starting_abilities
         self.current_turn: Optional[BattleTurn] = None
         self.round_start_delay = Delay(PAUSE_TIME_S)
         self.round_end_delay = Delay(PAUSE_TIME_S)
 
-    def start_round(self) -> None:
-        self.slot_turn_order: list[CombatSlot] = create_alternating_turn_order(self.ally_slots, self.enemy_slots)
-        assert self.slot_turn_order # Something is wrong if this is empty at start of turn
-        self.starting_abilities = AbilityHandler.from_trigger(self.ally_slots, self.enemy_slots, TriggerType.ROUND_START)
-        
+    @classmethod
+    def start_new_round(cls, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
+        slot_turn_order: list[CombatSlot] = create_alternating_turn_order(ally_slots, enemy_slots)
+        assert slot_turn_order # Something is wrong if this is empty, no loving characters?
+        starting_abilities = AbilityHandler.from_trigger(ally_slots, enemy_slots, TriggerType.ROUND_START)
+        new_round = cls(ally_slots, enemy_slots, slot_turn_order, starting_abilities)
+        return new_round
+
     def start_next_turn(self) -> None:
         next_slot = self.slot_turn_order.pop(0)
         assert next_slot.content
 
-        self.current_turn = BattleTurn(next_slot, self.ally_slots, self.enemy_slots) 
-        self.current_turn.start_turn()
+        if next_slot.content.is_dead():
+            logging.debug(f"{next_slot.content.name} is dead, skipping turn")
+            return # Try again next frame
+
+        self.current_turn = BattleTurn.start_new_turn(next_slot, self.ally_slots, self.enemy_slots)
 
     def end_round(self) -> None:
         cleanup_dead_units(self.ally_slots, self.enemy_slots)  # Clean up dead units at the end of the round
@@ -263,6 +258,7 @@ class CombatState(State):
         self.continue_button = Button((400, 500), "Continue...")
         self.current_round: Optional[BattleRound] = None
         self.round_counter = 0
+        self.starting_abilities: Optional[AbilityHandler] = None
 
     def start_state(self) -> None:
         logging.info("Starting Combat")
@@ -271,8 +267,7 @@ class CombatState(State):
     def start_next_round(self) -> None:
         self.round_counter += 1
         logging.info(f"Starting Round {self.round_counter}")
-        self.current_round = BattleRound(self.ally_slots, self.enemy_slots)
-        self.current_round.start_round()
+        self.current_round = BattleRound.start_new_round(self.ally_slots, self.enemy_slots)
 
     def is_combat_concluded(self) -> bool:
         return is_everyone_dead(self.ally_slots) or is_everyone_dead(self.enemy_slots)
@@ -287,6 +282,8 @@ class CombatState(State):
         self.next_state = StateChoice.SHOP
 
     def loop(self, user_input: UserInput) -> None:
+        assert self.starting_abilities
+
         if not self.starting_abilities.is_done:
             self.starting_abilities.activate()
             return
@@ -321,9 +318,11 @@ class CombatRenderer(PygameRenderer):
         for slot in combat_state.ally_slots + combat_state.enemy_slots:
             draw_slot(self.frame, slot)
             if slot.content:
-                is_acting = (combat_state.current_round and combat_state.current_round.current_turn and
+                is_acting = (combat_state.current_round and
+                             combat_state.current_round.current_turn and
                              combat_state.current_round.current_turn.character == slot.content and
-                             not slot.content.is_dead())
+                             not slot.content.is_dead()
+                             or slot.content.is_attacking)
                 is_enemy_slot = slot in combat_state.enemy_slots
                 scale_ratio = CHARACTER_HOVER_SCALE_RATIO if slot.is_hovered or is_acting else 1
 

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Optional, Protocol, Sequence, Self
 import random
 from enum import Enum, auto
@@ -12,9 +13,10 @@ class CharacterInterface(Protocol): # Put an interface to avoid circular imports
     name: str
     range: int
     is_defending: bool
-    combat_indicator: str
+    is_attacking: bool
+    combat_indicator: Optional[str]
 
-    def do_damage(self, amount: int, attacker: Self) -> None:
+    def do_damage(self, amount: int, attacker: CharacterInterface) -> None:
         ...
     def restore_health(self, healing: int) -> None:
         ...
@@ -36,7 +38,9 @@ class SlotInterface(Protocol):
     @property
     def content(self) -> Optional[CharacterInterface]:
         ...
-
+    @content.setter
+    def content(self, character: Optional[CharacterInterface]):
+        ...
 
 
 class Delay:
@@ -95,6 +99,9 @@ def get_friendly_slots(character: CharacterInterface, ally_slots: Sequence[SlotI
 def get_adversary_slots(character: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> Sequence[SlotInterface]:
     return ally_slots if character in [enemy_slot.content for enemy_slot in enemy_slots] else enemy_slots
 
+def living_characters(slots: Sequence[SlotInterface]) -> Sequence[CharacterInterface]:
+    return [slot.content for slot in slots if slot.content and not slot.content.is_dead()]
+
 
 class BasicAttack(Ability):
     def __init__(self,  caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
@@ -103,7 +110,6 @@ class BasicAttack(Ability):
         self.targeting_delay = Delay(1)
         self.waiting_delay = Delay(0.3)
         self.victim: Optional[CharacterInterface] = None
-        self.waiting: bool = False
 
     def determine_target(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
         acting_slot = get_character_slot(self.caster, [*ally_slots, *enemy_slots])
@@ -117,13 +123,11 @@ class BasicAttack(Ability):
             if not self.caster.range >= distance_between(acting_slot, target_slot): continue
 
             target_candidate.is_defending = True
-
             self.victim = target_candidate
             return
 
         if not self.waiting_delay.is_done:
             self.caster.combat_indicator = "Waiting"
-            self.waiting = True
             self.waiting_delay.tick()
             return
 
@@ -137,17 +141,6 @@ class BasicAttack(Ability):
         if not self.victim:
             self.determine_target(ally_slots, enemy_slots)
             return
-        
-        if self.waiting:
-            if not self.waiting_delay.is_done:
-                self.caster.combat_indicator = "Waiting"
-                self.waiting_delay.tick()
-                return
-            else:
-                self.caster.combat_indicator = None
-                self.is_done = True
-                self.waiting = False
-                return
 
         self.victim.combat_indicator = f"-{self.caster.damage}"
         self.caster.combat_indicator = "Attack!"
@@ -173,32 +166,82 @@ class Rampage(Ability):
     description: str = "Attacking: gain 1 attack"
     trigger = TriggerType.TURN_START
 
+    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+        super().__init__(caster, triggerer)
+        self.duration = Delay(0.5)
+
     def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        self.caster.combat_indicator = "+1 dmg"
+        self.caster.is_defending = True
+
+        if not self.duration.is_done:
+            self.duration.tick()
+            return
+
         self.caster.damage += 1
         logging.debug(f"{self.caster.name} uses Rampage, gaining 1 attack.")
-        self.is_done = True
 
+        self.caster.combat_indicator = None # Have character.refresh_indicators method?
+        self.caster.is_defending = False
+
+        self.is_done = True
 
 
 class Volley(Ability):
     name: str = "Volley"
-    description: str = "Combat start: 1 damage to 2 random enemies"
-    trigger = TriggerType.COMBAT_START
     amount: int = 1
+    hits: int = 2
+    description: str = f"Combat start: {amount} damage to {hits} random enemies"
+    trigger = TriggerType.COMBAT_START
+    targets: list[CharacterInterface]
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+        super().__init__(caster, triggerer)
+        self.targets: list[CharacterInterface] = []
+        self.duration = Delay(1)
+        self.has_searched_targets = False
+
+    def determine_targets(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]):
         defender_slots = enemy_slots if self.caster in [slot.content for slot in ally_slots] else ally_slots
 
-        valid_targets: list[CharacterInterface] = [slot.content for slot in defender_slots if slot.content and not slot.content.is_dead()]
-        if not valid_targets:
+        valid_targets: list[CharacterInterface] = [slot.content for slot in defender_slots if
+                                                   slot.content and not slot.content.is_dead()]
+
+        self.targets: list[CharacterInterface] = []
+        for _ in range(self.hits):
+            target = random.choice(valid_targets)
+            self.targets.append( target )
+
+            self.caster.combat_indicator = self.name
+            self.caster.is_attacking = True
+            target.combat_indicator = f"{-1}"
+            target.is_defending = True
+
+        self.has_searched_targets = True
+
+
+    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        if not self.has_searched_targets:
+            self.determine_targets(ally_slots, enemy_slots)
+
+        if not self.duration.is_done:
+            self.duration.tick()
+            return
+
+        if not self.targets:
             logging.debug(f"{self.caster.name} found No valid enemy targets for Volley")
             self.is_done = True
             return
         
-        for _ in range(2):
-            target = random.choice(valid_targets)
+        for target in self.targets:
             logging.debug(f"{self.caster.name} uses Volley on {target.name}, dealing {self.amount} damage.")
             target.do_damage(self.amount, self.caster)
+
+            target.combat_indicator = None
+            target.is_defending = False
+        self.caster.is_attacking = False
+        self.caster.combat_indicator = None
+
         self.is_done = True
 
 
@@ -208,19 +251,54 @@ class Heal(Ability):
     trigger = TriggerType.ROUND_START
     healing: int = 1
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+        super().__init__(caster, triggerer)
+        self.duration = Delay(1)
+        self.target: Optional[CharacterInterface] = None
+        self.has_searched_targets = False
+
+    def determine_targets(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]):
         friendly_slots = enemy_slots if self.caster not in [slot.content for slot in ally_slots] else ally_slots
 
-        damaged_living_allies = [slot.content for slot in friendly_slots if slot.content and not slot.content.is_dead() and not slot.content.is_full_health()]
-        if not damaged_living_allies: 
+        damaged_living_allies = [slot.content for slot in friendly_slots if
+                                 slot.content and not slot.content.is_dead()
+                                 and not slot.content.is_full_health()]
+
+        if damaged_living_allies:
+            lowest_health_living_ally = min(damaged_living_allies, key=lambda c: c.health)
+            lowest_health_living_ally.combat_indicator = f"+{self.healing}"
+            lowest_health_living_ally.is_defending = True
+
+            self.target = lowest_health_living_ally
+
+            self.caster.combat_indicator = self.name
+            self.caster.is_attacking = True
+        self.has_searched_targets = True
+
+
+    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        if not self.has_searched_targets:
+            self.determine_targets(ally_slots, enemy_slots)
+
+        if not self.duration.is_done:
+            self.duration.tick()
+            return
+
+        if not self.target:
             logging.debug(f"No viable targets to heal for {self.caster.name}")
             self.is_done = True
             return
-        
-        lowest_health_damaged_living_ally = min(damaged_living_allies, key=lambda c: c.health)
+
         heal_amount = self.healing # + caster.spell_power
-        logging.debug(f"{self.caster.name} healed {lowest_health_damaged_living_ally.name} for {heal_amount}")
-        lowest_health_damaged_living_ally.restore_health(heal_amount)
+        logging.debug(f"{self.caster.name} healed {self.target.name} for {heal_amount}")
+        self.target.restore_health(heal_amount)
+
+        # Need to improve this...
+        self.target.combat_indicator = None
+        self.target.is_defending = False
+        self.caster.combat_indicator = None
+        self.caster.is_attacking = False
+
         self.is_done = True
 
 
@@ -268,13 +346,39 @@ class Parry(Ability):
 
     def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
         assert self.triggerer
-        logging.debug(f"{self.caster.name} activates thorns, dealing {self.amount} damage back to {self.triggerer.name}.")
+        logging.debug(f"{self.caster.name} activates Parry, dealing {self.amount} damage back to {self.triggerer.name}.")
         self.triggerer.do_damage(self.amount, self.caster)
         self.is_done = True
 
 
 class CorpseExplosion(Ability):
     name: str = "Corpse Explosion"
+    description: str = "Blows up a corpse at start of turn, damaging enemies."
+    trigger = TriggerType.TURN_START
+    amount: int = 2
+
+    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        adversary_slots = get_adversary_slots(self.caster, ally_slots, enemy_slots)
+
+        corpse_slots = [adversary_slot for adversary_slot in adversary_slots if adversary_slot.content and adversary_slot.content.is_dead()]
+        if not corpse_slots:
+            logging.debug(f"No viable corpses to explode for {self.caster.name}")
+            self.is_done = True
+            return
+        corpse_slots[0].content = None # Crude way to get rid of character. Should be sent to a "graveyard"
+        viable_targets = [adversary_slot.content for adversary_slot in adversary_slots if adversary_slot.content]
+        if not viable_targets:
+            logging.debug(f"No viable targets to damage for {self.caster.name}")
+            self.is_done = True
+            return
+        target = viable_targets[0]
+        logging.debug(f"{self.caster.name}'s corpse explodes, dealing {self.amount} to {target.name}.")
+        target.do_damage(self.amount, self.caster)
+        self.is_done = True
+
+
+class AcidBurst(Ability):
+    name: str = "Acid Burst"
     description: str = "Explodes violently after death."
     trigger = TriggerType.DEATH
     amount: int = 3
@@ -316,10 +420,6 @@ class CorpseExplosion(Ability):
 #    """Deals 1 damage to the enemy behind the target when attacking."""
 #    #TODO
 #
-#
-#def parry(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
-#    """Deals 1 damage to the attacker when defending."""
-#    #TODO
 #
 #def flying(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
 #    """Allows the character to always target the last enemy when attacking."""

@@ -14,7 +14,7 @@ class StateChoice(Enum):
 class State(ABC):
     """Handles the specific behavior of a certain state"""
     def __init__(self) -> None:
-        self.cleanup_state()
+        self.next_state: Optional[StateChoice] = None
 
     def is_state_done(self) -> bool:
         return bool(self.next_state)

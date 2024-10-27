@@ -44,16 +44,12 @@ def generate_characters(slots: Sequence[CharacterSlot], character_type_pool: lis
 
 
 def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
-    assert character_slot.position is not None
-
     slot_rect = Rect(character_slot.position, character_slot.size)
 
-
     if character_slot.is_hovered:
-        slot_hover_image = IMAGES[ImageChoice.SLOT_HOVER].convert_alpha()
-        slot_hover_image = transform.scale(slot_hover_image, slot_rect.size)
-        frame.blit(slot_hover_image, slot_rect.topleft)
+        slot_image = IMAGES[ImageChoice.SLOT_HOVER].convert_alpha()
+        slot_image = transform.scale(slot_image, slot_rect.size)
     else:
         slot_image = IMAGES[ImageChoice.SLOT].convert_alpha()
         slot_image = transform.scale(slot_image, slot_rect.size)
-        frame.blit(slot_image, slot_rect.topleft)
+    frame.blit(slot_image, slot_rect.topleft)

@@ -1,35 +1,43 @@
 from typing import Optional
+import logging
 
 from components.character_slot import CharacterSlot, draw_slot
 from components.character import draw_character
 from core.interfaces import UserInput
 from core.renderer import PygameRenderer
-import logging
+from settings import Vector, DEFAULT_HOVER_SCALE_RATIO
+
+
+def switch_slots(slot_a: CharacterSlot, slot_b: CharacterSlot) -> None:
+    slot_a_content = slot_a.content
+    slot_b_content = slot_b.content
+
+    slot_a.content = slot_b_content
+    slot_b.content = slot_a_content
+    logging.debug(f"Switch places between {slot_a_content} and {slot_b_content}")
 
 
 class DragDropper:
-    '''
+    """
     Governs the nasty logic needed to drag-drop characters between slots
-    '''
+    """
     def __init__(self, slots: list[CharacterSlot]) -> None:
         self.slots = slots
         self.detached_slot: Optional[CharacterSlot] = None
+        self._mouse_position: Optional[Vector] = None
+
+    @property
+    def mouse_position(self) -> Vector:
+        assert self._mouse_position
+        return self._mouse_position
 
     def get_hover_slot(self) -> Optional[CharacterSlot]:
         for slot in self.slots:
             if slot.is_hovered:
                 return slot
 
-    def switch_slots(self, slot_a: CharacterSlot, slot_b: CharacterSlot) -> None:
-        slot_a_content = slot_a.content
-        slot_b_content = slot_b.content
-
-        slot_a.content = slot_b_content
-        slot_b.content = slot_a_content
-        logging.debug(f"Switch places between {slot_a_content} and {slot_b_content}")
-        
     def loop(self, user_input: UserInput) -> None:
-        self.user_input = user_input # Stored to be able to draw later...
+        self._mouse_position = user_input.mouse_position # Stored to be able to draw later...
 
         for slot in self.slots: 
             slot.refresh(user_input.mouse_position)
@@ -43,7 +51,7 @@ class DragDropper:
                 self.detached_slot = None
                 return
 
-            self.switch_slots(hover_slot, self.detached_slot)
+            switch_slots(hover_slot, self.detached_slot)
             self.detached_slot = None
 
         else: 
@@ -70,12 +78,13 @@ class DragDropRenderer(PygameRenderer):
                 hovered_slot = slot  # Save the hovered slot for later
                 continue
 
-            position = drag_dropper.user_input.mouse_position if slot is drag_dropper.detached_slot else slot.center_coordinate
-            scale_ratio = 1.5 if slot.is_hovered else 1
+            position = drag_dropper.mouse_position if slot is drag_dropper.detached_slot else slot.center_coordinate
+            scale_ratio = DEFAULT_HOVER_SCALE_RATIO if slot.is_hovered else 1
 
             draw_character(self.frame, position, slot.content, scale_ratio=scale_ratio, slot_is_hovered=slot.is_hovered)
         
-        # Draw the hovered slot's character last to ensure it's on top
+        # Draw the hovered slot's character last to ensure its on top
         if hovered_slot:
-            position = drag_dropper.user_input.mouse_position if hovered_slot is drag_dropper.detached_slot else hovered_slot.center_coordinate
-            draw_character(self.frame, position, hovered_slot.content, scale_ratio=1.5, slot_is_hovered=True)
+            position = drag_dropper.mouse_position if hovered_slot is drag_dropper.detached_slot else hovered_slot.center_coordinate
+            assert hovered_slot.content
+            draw_character(self.frame, position, hovered_slot.content, scale_ratio=DEFAULT_HOVER_SCALE_RATIO, slot_is_hovered=True)

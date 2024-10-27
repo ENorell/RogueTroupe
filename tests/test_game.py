@@ -57,9 +57,7 @@ def test_character_heal_ability() -> None:
 
     assert unit.ability_type
 
-    battle_round = BattleRound([slot], [])
-
-    battle_round.start_round()
+    battle_round = BattleRound.start_new_round([slot], [])
 
     for _ in range(100):
         battle_round.loop()
@@ -72,8 +70,7 @@ def test_character_rampage_ability() -> None:
     unit = Spinoswordaus()
     slot.content = unit
 
-    turn = BattleTurn(slot, [slot], [])
-    turn.start_turn()
+    turn = BattleTurn.start_new_turn(slot, [slot], [])
 
     for _ in range(100):
         turn.loop()
@@ -106,7 +103,7 @@ def test_enrage_ability() -> None:
     assert unit.damage == Tripiketops.damage + 2
 
 
-def test_corpse_explosion_ability() -> None:
+def test_acid_burst_ability() -> None:
     """
     Test that the on-death ability works
     """
@@ -117,8 +114,7 @@ def test_corpse_explosion_ability() -> None:
     unit = Dilophmageras()
     slot.content = unit
 
-    turn = BattleTurn(slot, [slot], [enemy_slot])
-    turn.start_turn()
+    turn = BattleTurn.start_new_turn(slot, [slot], [enemy_slot])
 
     # Kill the character
     unit.do_damage(100, enemy_character)
@@ -148,8 +144,7 @@ def test_parry_ability() -> None:
     slot.content = unit
 
     # The attacker attacks once and is itself damaged
-    turn = BattleTurn(attack_slot, [slot], [attack_slot])
-    turn.start_turn()
+    turn = BattleTurn.start_new_turn(attack_slot, [slot], [attack_slot])
 
     for _ in range(100):
         turn.loop()

@@ -16,3 +16,4 @@ BLUE_COLOR: Final[Color] = (0, 0, 255)
 YELLOW_COLOR: Final[Color] = (255, 255, 0)
 
 DEFAULT_TEXT_SIZE: Final[int] = 16
+DEFAULT_HOVER_SCALE_RATIO: Final[float] = 1.5

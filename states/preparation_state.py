@@ -1,4 +1,4 @@
-from pygame import transform
+import pygame
 from typing import Final
 import logging
 
@@ -49,7 +49,7 @@ class PreparationState(State):
 
 
 class PreparationRenderer(DragDropRenderer):
-    background_image = transform.scale( IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
+    background_image = pygame.transform.scale(IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
     def draw_frame(self, preparation_state: PreparationState):
         self.frame.blit(self.background_image, (0, 0))
@@ -75,5 +75,5 @@ class PreparationRenderer(DragDropRenderer):
             if slot.is_hovered:
                 for enemy_slot in preparation_state.enemy_slots:
                     if enemy_slot.coordinate - slot.coordinate == slot.content.range:
-                            enemy_slot.content.is_defending = True
+                        enemy_slot.content.is_defending = True
                 
