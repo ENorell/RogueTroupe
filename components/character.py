@@ -45,7 +45,6 @@ class Character(ABC):
         self.ability_queue: list[Ability] = []
 
     def attack(self) -> None:
-        print("ATTACK")
         self.queue_ability(TriggerType.ATTACK, attacker=None)
 
     def do_damage(self, amount: int, attacker: Character) -> None:

@@ -414,7 +414,6 @@ class Potion(Ability):
     duration = Delay(1)
 
     def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
-        print(self.caster.ability_charges)
         if self.caster.health < 3 and self.caster.ability_charges and self.caster.ability_charges > 0:
             logging.debug(f"{self.caster.name} uses potion to heal.")
             self.caster.revive()
