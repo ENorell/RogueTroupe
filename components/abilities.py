@@ -395,6 +395,33 @@ class AcidBurst(Ability):
         target.do_damage(self.amount, self.caster)
         self.is_done = True
 
+class Inspire(Ability):
+    name: str = "Inspire"
+    description: str = "Inspire front ally to attack"
+    trigger = TriggerType.TURN_START
+
+    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        if ally_slots[0] and ally_slots[0].content != self.caster:
+            self.caster.combat_indicator = self.name
+            logging.debug(f"{self.caster.name} inspires {ally_slots[0].content.name} to attack.")
+            ally_slots[0].content.attack()
+            self.is_done = True
+
+class Potion(Ability):
+    name: str = "Potion"
+    description: str = "If health below 3, heal to max health"
+    trigger = TriggerType.TURN_START
+    duration = Delay(1)
+
+    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+        print(self.caster.ability_charges)
+        if self.caster.health < 3 and self.caster.ability_charges and self.caster.ability_charges > 0:
+            logging.debug(f"{self.caster.name} uses potion to heal.")
+            self.caster.revive()
+            self.caster.consume_ability_charge()
+        self.is_done = True
+
+
 
 #def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:
 #    """Deals 3 damage to the highest attack enemy at the start of combat."""

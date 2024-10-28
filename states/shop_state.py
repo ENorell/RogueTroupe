@@ -3,13 +3,12 @@ from pygame import transform
 
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
-from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
+from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx, Alchemixus, Bardomimus, Battlemagodon, Naturalis, Necrorex, Quetza, Krytoraptor, Triceros
 from components.character_slot import CharacterSlot, CombatSlot, generate_characters
 from components.drag_dropper import DragDropper, DragDropRenderer
 from components.interactable import Button, draw_button
 from assets.images import IMAGES, ImageChoice
 from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
-
 
 SHOP_POOL: list[type[Character]] = [
     Tankylosaurus,
@@ -18,7 +17,15 @@ SHOP_POOL: list[type[Character]] = [
     Dilophmageras,
     Tripiketops,
     Velocirougue,
-    Archeryptrx
+    Archeryptrx,
+    Alchemixus,
+    Bardomimus,
+    Battlemagodon,
+    Naturalis,
+    Necrorex,
+    Quetza,
+    Krytoraptor,
+    Triceros
 ]
 
 SHOP_TOP_LEFT_POSITION: Final[Vector] = (170,180)
