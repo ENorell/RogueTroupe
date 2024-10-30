@@ -39,6 +39,6 @@ class ImageChoice(Enum):
     FIGHT_BUTTON              = "assets/ui/fight.webp"
     BUY_BUTTON                = "assets/ui/buy.webp"
     GOLD_ICON                 = "assets/ui/gold.webp"
-
+    GOLD_BACK                 = "assets/ui/goldback.webp"
 
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}
