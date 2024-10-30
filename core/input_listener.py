@@ -1,5 +1,4 @@
 from pygame import event, QUIT, MOUSEBUTTONDOWN, MOUSEBUTTONUP, KEYDOWN, K_SPACE, mouse, key
-from keyboard import is_pressed
 
 from core.interfaces import UserInput, InputListener
 

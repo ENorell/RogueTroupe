@@ -19,7 +19,7 @@ class PygameEngine(Engine):
             traceback.print_exc()
             
     def wait_for_next_frame(self) -> None:
-        self.clock.tick(GAME_FPS) 
+        self.clock.tick(GAME_FPS)
         
     def quit(self) -> None:
         print("Exiting...")
