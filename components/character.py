@@ -7,8 +7,8 @@ from pygame import Surface, Rect, font
 from components.abilities import *
 from assets.images import ImageChoice, IMAGES
 from settings import Vector, BLACK_COLOR, RED_COLOR, DEFAULT_TEXT_SIZE, WHITE_COLOR
-TOOLTIP_WIDTH = 220
-TOOLTIP_HEIGHT = 120
+TOOLTIP_WIDTH = 380
+TOOLTIP_HEIGHT = 190
 
 RANGE_ICON_HEIGHT = 40
 RANGE_ICON_WIDTH = 50
@@ -31,6 +31,7 @@ class Character(ABC):
     damage: int = 2
     range: int = 1
     ability_type: Optional[type[Ability]] = None
+    ability_charges = None
     character_image: ImageChoice
     corpse_image = ImageChoice.CHARACTER_CORPSE
 
@@ -38,6 +39,7 @@ class Character(ABC):
         self._health = self.max_health
         self.is_attacking = False
         self.is_defending = False
+        self.is_waiting = False
         self.target = None
         self.attacker = None
         self.combat_indicator: Optional[str] = None
@@ -85,6 +87,9 @@ class Character(ABC):
 
     def revive(self) -> None:
         self._health = self.max_health
+
+    def consume_ability_charge(self) -> None:
+        self.ability_charges -= 1
 
     @property
     def health(self) -> int:
@@ -165,7 +170,7 @@ class Pterapike(Character):
     name: str = "Pterapike"
     max_health: int = 4
     damage: int = 1
-    range: int = 0
+    range: int = 1
     character_image = ImageChoice.CHARACTER_PTERO
     ability_type: Optional[type[Ability]] = None
 
@@ -195,6 +200,87 @@ class Velocirougue(Character):
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
     ability_type: Optional[type[Ability]] = Reckless
+
+class Alchemixus(Character):
+    """Alchemist"""
+    name: str = "Alchemixus"
+    max_health: int = 6
+    damage: int = 1
+    range: int = 2
+    ability_charges = 1
+    character_image = ImageChoice.CHARACTER_ALCHEMIST
+    ability_type: Optional[type[Ability]] = Potion
+
+
+class Bardomimus(Character):
+    """Bard"""
+    name: str = "Bardomimus"
+    max_health: int = 3
+    damage: int = 1
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_BARD
+    ability_type: Optional[type[Ability]] = Inspire
+
+
+class Battlemagodon(Character):
+    """Battle mage"""
+    name: str = "Battlemagodon"
+    max_health: int = 5
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_BATTLE_MAGE
+    ability_type: Optional[type[Ability]] = None
+
+
+class Naturalis(Character):
+    """A nature mage"""
+    name: str = "Naturalis"
+    max_health: int = 4
+    damage: int = 1
+    range: int = 3
+    character_image = ImageChoice.CHARACTER_NATURE_MAGE
+    ability_type: Optional[type[Ability]] = None
+
+
+class Necrorex(Character):
+    """A necromancer"""
+    name: str = "Necrorex"
+    max_health: int = 3
+    damage: int = 2
+    range: int = 2
+    character_image = ImageChoice.CHARACTER_NECROMANCER
+    ability_type: Optional[type[Ability]] = None
+
+
+class Quetza(Character):
+    """A quetzalcoatlus that dual-wields"""
+    name: str = "Quetza"
+    max_health: int = 4
+    damage: int = 3
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_QUETZALCOATLUS
+    ability_type: Optional[type[Ability]] = None
+
+
+class Krytoraptor(Character):
+    """A raptor"""
+    name: str = "Krytoraptor"
+    max_health: int = 3
+    damage: int = 4
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_RAPTOR
+    ability_type: Optional[type[Ability]] = None
+
+
+class Triceros(Character):
+    """A defensive triceratops with big shield"""
+    name: str = "Triceros"
+    max_health: int = 7
+    damage: int = 1
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_DEFENDER
+    ability_type: Optional[type[Ability]] = None
+
 
 
 from functools import lru_cache
@@ -237,17 +323,23 @@ def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: f
     return character_image, rect
 
 def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
-    box_width = TOOLTIP_WIDTH * scale_ratio
-    box_height = TOOLTIP_HEIGHT * scale_ratio
+    box_width = TOOLTIP_WIDTH
+    box_height = TOOLTIP_HEIGHT
 
     tooltip_rect = Rect(
-        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels * scale_ratio - box_height - 10),
+        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels - box_height - 40),
         (box_width, box_height)
     )
+
+    # Clamp the tooltip position to ensure it stays within the screen boundaries
+    screen_rect = frame.get_rect()
+    tooltip_rect.left = max(screen_rect.left, min(tooltip_rect.left, screen_rect.right - tooltip_rect.width))
+    tooltip_rect.top = max(screen_rect.top, min(tooltip_rect.top, screen_rect.bottom - tooltip_rect.height))
 
     tooltip_image = get_scaled_image(ImageChoice.CHARACTER_TOOLTIP, tooltip_rect.size)
     frame.blit(tooltip_image, tooltip_rect.topleft)
     draw_tooltip_text(frame, character, tooltip_rect, scale_ratio)
+
 
 def draw_tooltip_text(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
     draw_text(f"{character.name}", frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 40), scale_ratio, "pixel_font")

@@ -19,6 +19,15 @@ class ImageChoice(Enum):
     CHARACTER_SUMMONER        = "assets/characters/summoner-transformed.webp"
     CHARACTER_VELO            = "assets/characters/velo-transformed.webp"
 
+    CHARACTER_ALCHEMIST       = "assets/characters/alchemist-transformed.webp"
+    CHARACTER_BARD            = "assets/characters/bard-transformed.webp"
+    CHARACTER_BATTLE_MAGE     = "assets/characters/battlemage-transformed.webp"
+    CHARACTER_NATURE_MAGE     = "assets/characters/nature-transformed.webp"
+    CHARACTER_NECROMANCER     = "assets/characters/necro-transformed.webp"
+    CHARACTER_QUETZALCOATLUS  = "assets/characters/quetz-transformed.webp"
+    CHARACTER_RAPTOR          = "assets/characters/raptor2-transformed.webp"
+    CHARACTER_DEFENDER        = "assets/characters/shield-transformed.webp"
+
     CHARACTER_TOOLTIP         = "assets/ui/tooltip.webp"
     SLOT                      = "assets/ui/slot.webp"
     SLOT_HOVER                = "assets/ui/slot-hover.webp"
@@ -26,6 +35,10 @@ class ImageChoice(Enum):
     COMBAT_TARGET             = "assets/ui/target.png"
     HEALTH_ICON               = "assets/ui/health.webp"
     DAMAGE_ICON               = "assets/ui/attack.webp"
-
+    REROLL_BUTTON             = "assets/ui/reroll.webp"
+    FIGHT_BUTTON              = "assets/ui/fight.webp"
+    BUY_BUTTON                = "assets/ui/buy.webp"
+    GOLD_ICON                 = "assets/ui/gold.webp"
+    GOLD_BACK                 = "assets/ui/goldback.webp"
 
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}

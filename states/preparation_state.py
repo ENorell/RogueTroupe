@@ -72,8 +72,14 @@ class PreparationRenderer(DragDropRenderer):
 
         #Use the defending indicator to highlight who character will attack
         for slot in preparation_state.ally_slots:
-            if slot.is_hovered:
+            has_target = False
+            if slot.content:
                 for enemy_slot in preparation_state.enemy_slots:
                     if enemy_slot.coordinate - slot.coordinate == slot.content.range:
-                        enemy_slot.content.is_defending = True
+                        has_target = True
+                        if slot.is_hovered:
+                            enemy_slot.content.is_defending = True
+                # if not has_target:
+                #     slot.content.is_attacking = True
+                
                 
