@@ -282,6 +282,107 @@ class Triceros(Character):
     ability_type: Optional[type[Ability]] = None
 
 
+#ENEMIES
+class Aepycamelus(Character):
+    """A tall, long-necked herbivore with swift kicks"""
+    name: str = "Aepycamelus"
+    max_health: int = 5
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_AEPYCAMELUS
+    ability_type: Optional[type[Ability]] = None
+
+
+class Brontotherium(Character):
+    """A massive beast with a powerful charge"""
+    name: str = "Brontotherium"
+    max_health: int = 8
+    damage: int = 3
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_BRONTOTHERIUM
+    ability_type: Optional[type[Ability]] = None
+
+
+class Cranioceras(Character):
+    """A headbutting herbivore with strong defensive abilities"""
+    name: str = "Cranioceras"
+    max_health: int = 6
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_CRANIOCERAS
+    ability_type: Optional[type[Ability]] = None
+
+
+class Glypto(Character):
+    """An armored tank with a heavy tail swipe"""
+    name: str = "Glypto"
+    max_health: int = 7
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_GLYPTO
+    ability_type: Optional[type[Ability]] = None
+
+
+class Gorgono(Character):
+    """A fierce predator with a deadly bite"""
+    name: str = "Gorgono"
+    max_health: int = 4
+    damage: int = 5
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_GORGONO
+    ability_type: Optional[type[Ability]] = None
+
+
+class Mammoth(Character):
+    """A woolly giant with a trunk slam ability"""
+    name: str = "Mammoth"
+    max_health: int = 9
+    damage: int = 3
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_MAMMOTH
+    ability_type: Optional[type[Ability]] = None
+
+
+class Phorus(Character):
+    """A fast-running bird with a piercing beak attack"""
+    name: str = "Phorus"
+    max_health: int = 3
+    damage: int = 4
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_PHORUS
+    ability_type: Optional[type[Ability]] = None
+
+
+class Sabre(Character):
+    """A stealthy cat with a sharp bite"""
+    name: str = "Sabre"
+    max_health: int = 4
+    damage: int = 4
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_SABRE
+    ability_type: Optional[type[Ability]] = None
+
+
+class Sloth(Character):
+    """A slow-moving giant with a powerful claw attack"""
+    name: str = "Sloth"
+    max_health: int = 6
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_SLOTH
+    ability_type: Optional[type[Ability]] = None
+
+
+class Trilo(Character):
+    """An ancient armored invertebrate with a hard shell"""
+    name: str = "Trilo"
+    max_health: int = 5
+    damage: int = 2
+    range: int = 1
+    character_image = ImageChoice.CHARACTER_TRILO
+    ability_type: Optional[type[Ability]] = None
+
+
 
 from functools import lru_cache
 
