@@ -405,7 +405,7 @@ class Inspire(Ability):
             self.caster.combat_indicator = self.name
             logging.debug(f"{self.caster.name} inspires {ally_slots[0].content.name} to attack.")
             ally_slots[0].content.attack()
-            self.is_done = True
+        self.is_done = True
 
 class Potion(Ability):
     name: str = "Potion"

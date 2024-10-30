@@ -35,6 +35,10 @@ class ImageChoice(Enum):
     COMBAT_TARGET             = "assets/ui/target.png"
     HEALTH_ICON               = "assets/ui/health.webp"
     DAMAGE_ICON               = "assets/ui/attack.webp"
+    REROLL_BUTTON             = "assets/ui/reroll.webp"
+    FIGHT_BUTTON              = "assets/ui/fight.webp"
+    BUY_BUTTON                = "assets/ui/buy.webp"
+    GOLD_ICON                 = "assets/ui/gold.webp"
 
 
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}

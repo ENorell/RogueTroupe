@@ -1,14 +1,17 @@
 from pygame import Surface, Rect, draw, transform
 from typing import Final, Optional, Sequence
 from random import choice
-
-from components.interactable import Interactable
+from components.interactable import Interactable,Button
 from components.character import Character
 from settings import Color, Vector, BLACK_COLOR
 from assets.images import ImageChoice, IMAGES
 
 BATTLE_SLOT_COLOR: Final[Color] = (57, 122, 65)
 SLOT_HOVER_WIDTH: Final[int] = 3
+
+BUY_BUTTON_WIDTH = 70
+BUY_BUTTON_HEIGHT = 55
+buy_button_image = transform.scale(IMAGES[ImageChoice.BUY_BUTTON], (BUY_BUTTON_WIDTH, BUY_BUTTON_HEIGHT))
 
 
 class CharacterSlot(Interactable):
@@ -36,6 +39,14 @@ class CombatSlot(CharacterSlot):
         self.coordinate = coordinate
         super().__init__(position, color)
 
+class ShopSlot(CharacterSlot):
+
+    def __init__(self, position: Vector, color: Color) -> None:
+        super().__init__(position, color)
+        self.buy_button = Button((position[0], position[1] -130), "Buy", buy_button_image)
+    
+    
+
 
 def generate_characters(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
     for slot in slots:
@@ -53,3 +64,4 @@ def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
         slot_image = IMAGES[ImageChoice.SLOT].convert_alpha()
         slot_image = transform.scale(slot_image, slot_rect.size)
     frame.blit(slot_image, slot_rect.topleft)
+

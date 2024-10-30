@@ -7,8 +7,8 @@ from pygame import Surface, Rect, font
 from components.abilities import *
 from assets.images import ImageChoice, IMAGES
 from settings import Vector, BLACK_COLOR, RED_COLOR, DEFAULT_TEXT_SIZE, WHITE_COLOR
-TOOLTIP_WIDTH = 220
-TOOLTIP_HEIGHT = 120
+TOOLTIP_WIDTH = 380
+TOOLTIP_HEIGHT = 190
 
 RANGE_ICON_HEIGHT = 40
 RANGE_ICON_WIDTH = 50
@@ -39,6 +39,7 @@ class Character(ABC):
         self._health = self.max_health
         self.is_attacking = False
         self.is_defending = False
+        self.is_waiting = False
         self.target = None
         self.attacker = None
         self.combat_indicator: Optional[str] = None
@@ -322,17 +323,23 @@ def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: f
     return character_image, rect
 
 def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
-    box_width = TOOLTIP_WIDTH * scale_ratio
-    box_height = TOOLTIP_HEIGHT * scale_ratio
+    box_width = TOOLTIP_WIDTH
+    box_height = TOOLTIP_HEIGHT
 
     tooltip_rect = Rect(
-        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels * scale_ratio - box_height - 10),
+        (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels - box_height - 40),
         (box_width, box_height)
     )
+
+    # Clamp the tooltip position to ensure it stays within the screen boundaries
+    screen_rect = frame.get_rect()
+    tooltip_rect.left = max(screen_rect.left, min(tooltip_rect.left, screen_rect.right - tooltip_rect.width))
+    tooltip_rect.top = max(screen_rect.top, min(tooltip_rect.top, screen_rect.bottom - tooltip_rect.height))
 
     tooltip_image = get_scaled_image(ImageChoice.CHARACTER_TOOLTIP, tooltip_rect.size)
     frame.blit(tooltip_image, tooltip_rect.topleft)
     draw_tooltip_text(frame, character, tooltip_rect, scale_ratio)
+
 
 def draw_tooltip_text(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
     draw_text(f"{character.name}", frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 40), scale_ratio, "pixel_font")
