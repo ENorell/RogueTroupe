@@ -26,7 +26,7 @@ class Loopable(Protocol):
 
 class Renderer(Protocol):
     
-    def render(self, loopable: Loopable) -> None:
+    def render(self) -> None:
         ...
 
 
@@ -45,7 +45,7 @@ class Engine(ABC):
 
             self.loopable.loop(user_input)
 
-            self.renderer.render(self.loopable)
+            self.renderer.render()
 
             if user_input.is_quit: 
                 self.running = False

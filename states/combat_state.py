@@ -1,4 +1,4 @@
-from pygame import transform
+from pygame import transform, Surface
 from typing import Optional, Final, Self
 import logging
 
@@ -307,16 +307,24 @@ class CombatState(State):
 class CombatRenderer(PygameRenderer): 
     background_image = transform.scale(IMAGES[ImageChoice.BACKGROUND_COMBAT_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
-    def draw_frame(self, combat_state: CombatState) -> None:
-        self.frame.blit(self.background_image, (0, 0))
+    def __init__(self, combat_state: CombatState) -> None:
+        super().__init__()
+        self.combat_state = combat_state
+
+    def draw_frame(self) -> None:
+        self.render_combat_state(self.frame, self.combat_state)
+
+    @staticmethod
+    def render_combat_state(frame: Surface, combat_state: CombatState) -> None:
+        frame.blit(CombatRenderer.background_image, (0, 0))
 
         if combat_state.is_combat_concluded():
-            draw_button(self.frame, combat_state.continue_button)
+            draw_button(frame, combat_state.continue_button)
             result_text = "You lost..." if is_everyone_dead(combat_state.ally_slots) else "You won!"
-            draw_text(result_text, self.frame, (400, 400))
+            draw_text(result_text, frame, (400, 400))
 
         for slot in combat_state.ally_slots + combat_state.enemy_slots:
-            draw_slot(self.frame, slot)
+            draw_slot(frame, slot)
             if slot.content:
                 is_acting = (combat_state.current_round and
                              combat_state.current_round.current_turn and
@@ -326,4 +334,4 @@ class CombatRenderer(PygameRenderer):
                 is_enemy_slot = slot in combat_state.enemy_slots
                 scale_ratio = CHARACTER_HOVER_SCALE_RATIO if slot.is_hovered or is_acting else 1
 
-                draw_character(self.frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio, slot.is_hovered)
+                draw_character(frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio, slot.is_hovered)

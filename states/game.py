@@ -1,4 +1,5 @@
 from typing import Final
+from pygame import Surface
 
 from core.interfaces import Loopable, UserInput
 from core.renderer import PygameRenderer
@@ -48,17 +49,18 @@ def create_bench_slots() -> list[CharacterSlot]:
         slots.append(CharacterSlot((position_x, BENCH_HEIGHT), BENCH_SLOT_COLOR))
     return slots
 
+
 class Game(StateMachine):
 
     def __init__(self) -> None:
 
-        ally_slots = create_ally_slots()
+        ally_slots  = create_ally_slots()
         enemy_slots = create_enemy_slots()
         bench_slots = create_bench_slots()
 
-        shop_state = ShopState(ally_slots, bench_slots)
+        shop_state        = ShopState(ally_slots, bench_slots)
         preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
-        combat_state = CombatState(ally_slots, enemy_slots)
+        combat_state      = CombatState(ally_slots, enemy_slots)
 
         states: dict[StateChoice, State] = {
             StateChoice.SHOP: shop_state,
@@ -70,23 +72,28 @@ class Game(StateMachine):
 
 
 class GameRenderer(PygameRenderer):
-    def __init__(self) -> None:
+    def __init__(self, game: Game) -> None:
         super().__init__()
-        self.shop_renderer = ShopRenderer()
-        self.preparation_renderer = PreparationRenderer()
-        self.combat_renderer = CombatRenderer()
+        self.game = game
 
-    def draw_frame(self, game: Game):
+    def draw_frame(self):
+        self.render_game(self.frame, self.game.state)
+
+    @staticmethod
+    def render_game(frame: Surface, state: State):
         # Set the appropriate background image based on the game state
-        match game.state:
+        match state:
             case CombatState():
-                self.combat_renderer.draw_frame(game.state)
+                assert isinstance(state, CombatState)
+                CombatRenderer.render_combat_state(frame, state)
 
             case PreparationState():
-                self.preparation_renderer.draw_frame(game.state)
+                assert isinstance(state, PreparationState)
+                PreparationRenderer.render_preparation_state(frame, state)
 
             case ShopState():
-                self.shop_renderer.draw_frame(game.state)
+                assert isinstance(state, ShopState)
+                ShopRenderer.render_shop_state(frame, state)
 
             case _:
-                raise Exception(f"Unknown state to render: {game.state}")
+                raise Exception(f"Unknown state to render: {state}")

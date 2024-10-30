@@ -1,12 +1,14 @@
 from __future__ import annotations
-from typing import Optional, Protocol, Sequence, Self
+from typing import TYPE_CHECKING, Optional, Protocol, Sequence, Self
 import random
 from enum import Enum, auto
 from abc import ABC, abstractmethod
 from settings import GAME_FPS
 import logging
 
-
+if TYPE_CHECKING: # Forward reference
+    from character import Character
+    from character_slot import CombatSlot
 
 class CharacterInterface(Protocol): # Put an interface to avoid circular imports
     damage: int
@@ -71,50 +73,49 @@ class Ability(ABC):
     trigger: TriggerType
     is_done: bool = False
 
-    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+    def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
         self.caster = caster
         self.triggerer = triggerer
 
     @classmethod
-    def from_plan(cls, caster: CharacterInterface) -> Self:
+    def from_plan(cls, caster: "Character") -> Self:
         return cls(caster, triggerer=None)
 
     @abstractmethod
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         ...
 
 
-
 # This function hints to the need of some sort of grid class that can hold the slots and calculate distances etc. 
-def distance_between(slot_a: SlotInterface, slot_b: SlotInterface) -> int:
+def distance_between(slot_a: "CombatSlot", slot_b: "CombatSlot") -> int:
     return abs( slot_a.coordinate - slot_b.coordinate )
 
-def get_character_slot(character: CharacterInterface, slots: Sequence[SlotInterface]) -> SlotInterface:
+def get_character_slot(character: "Character", slots: list["CombatSlot"]) -> "CombatSlot":
     index = [slot.content for slot in slots if slot].index(character)
     return slots[index]
 
-def get_friendly_slots(character: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> Sequence[SlotInterface]:
+def get_friendly_slots(character: "Character", ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> list["CombatSlot"]:
     return ally_slots if character in [ally_slot.content for ally_slot in ally_slots] else enemy_slots
 
-def get_adversary_slots(character: CharacterInterface, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> Sequence[SlotInterface]:
+def get_adversary_slots(character: "Character", ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> list["CombatSlot"]:
     return ally_slots if character in [enemy_slot.content for enemy_slot in enemy_slots] else enemy_slots
 
-def living_characters(slots: Sequence[SlotInterface]) -> Sequence[CharacterInterface]:
+def living_characters(slots: list["CombatSlot"]) -> list["Character"]:
     return [slot.content for slot in slots if slot.content and not slot.content.is_dead()]
 
 
 class BasicAttack(Ability):
-    def __init__(self,  caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+    def __init__(self,  caster: "Character", triggerer: Optional["Character"]) -> None:
         super().__init__(caster, triggerer)
 
         self.targeting_delay = Delay(1)
         self.waiting_delay = Delay(0.3)
-        self.victim: Optional[CharacterInterface] = None
+        self.victim: Optional["Character"] = None
 
-    def determine_target(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def determine_target(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         acting_slot = get_character_slot(self.caster, [*ally_slots, *enemy_slots])
 
-        defender_slots: Sequence[SlotInterface] = enemy_slots if self.caster in [slot.content for slot in ally_slots] else ally_slots
+        defender_slots: list["CombatSlot"] = enemy_slots if self.caster in [slot.content for slot in ally_slots] else ally_slots
 
         for target_slot in reversed( defender_slots ): # Prioritize slots farther away?
             if not target_slot.content: continue
@@ -136,7 +137,7 @@ class BasicAttack(Ability):
         logging.debug(f"{self.caster.name} has no target to attack (range {self.caster.range}).")
         self.is_done = True
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         # Search for target character, stop early if none found
         if not self.victim:
             self.determine_target(ally_slots, enemy_slots)
@@ -166,11 +167,11 @@ class Rampage(Ability):
     description: str = "Attacking: gain 1 attack"
     trigger = TriggerType.TURN_START
 
-    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+    def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
         super().__init__(caster, triggerer)
         self.duration = Delay(0.5)
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         self.caster.combat_indicator = "+1 dmg"
         self.caster.is_defending = True
 
@@ -193,21 +194,21 @@ class Volley(Ability):
     hits: int = 2
     description: str = f"Combat start: {amount} damage to {hits} random enemies"
     trigger = TriggerType.COMBAT_START
-    targets: list[CharacterInterface]
+    targets: list["Character"]
 
-    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+    def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
         super().__init__(caster, triggerer)
-        self.targets: list[CharacterInterface] = []
+        self.targets: list["Character"] = []
         self.duration = Delay(1)
         self.has_searched_targets = False
 
-    def determine_targets(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]):
+    def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]):
         defender_slots = enemy_slots if self.caster in [slot.content for slot in ally_slots] else ally_slots
 
-        valid_targets: list[CharacterInterface] = [slot.content for slot in defender_slots if
+        valid_targets: list["Character"] = [slot.content for slot in defender_slots if
                                                    slot.content and not slot.content.is_dead()]
 
-        self.targets: list[CharacterInterface] = []
+        self.targets: list["Character"] = []
         for _ in range(self.hits):
             target = random.choice(valid_targets)
             self.targets.append( target )
@@ -220,7 +221,7 @@ class Volley(Ability):
         self.has_searched_targets = True
 
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         if not self.has_searched_targets:
             self.determine_targets(ally_slots, enemy_slots)
 
@@ -251,13 +252,13 @@ class Heal(Ability):
     trigger = TriggerType.ROUND_START
     healing: int = 1
 
-    def __init__(self, caster: CharacterInterface, triggerer: Optional[CharacterInterface]) -> None:
+    def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
         super().__init__(caster, triggerer)
         self.duration = Delay(1)
-        self.target: Optional[CharacterInterface] = None
+        self.target: Optional["Character"] = None
         self.has_searched_targets = False
 
-    def determine_targets(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]):
+    def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]):
         friendly_slots = enemy_slots if self.caster not in [slot.content for slot in ally_slots] else ally_slots
 
         damaged_living_allies = [slot.content for slot in friendly_slots if
@@ -276,7 +277,7 @@ class Heal(Ability):
         self.has_searched_targets = True
 
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         if not self.has_searched_targets:
             self.determine_targets(ally_slots, enemy_slots)
 
@@ -308,7 +309,7 @@ class Reckless(Ability):
     trigger = TriggerType.TURN_START
     damage: int = 1
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         logging.debug(f"{self.caster.name} uses Reckless, losing 1 health.")
         self.caster.do_damage(self.damage, self.caster)
         self.is_done = True
@@ -320,7 +321,7 @@ class Devour(Ability):
     trigger = TriggerType.ATTACK
     amount: int = 1
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         logging.debug(f"{self.caster.name} uses Devour, raising their max health by {self.amount}.")
         self.caster.raise_max_health(self.amount)
         self.is_done = True
@@ -332,7 +333,7 @@ class Enrage(Ability):
     trigger = TriggerType.DEFEND
     amount: int = 1
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         logging.debug(f"{self.caster.name} uses Enrage, raising their damage by {self.amount}.")
         self.caster.damage += self.amount
         self.is_done = True
@@ -344,7 +345,7 @@ class Parry(Ability):
     description: str = f"Parries and deals {amount} damage back to the attacker"
     trigger = TriggerType.DEFEND
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         assert self.triggerer
         logging.debug(f"{self.caster.name} activates Parry, dealing {self.amount} damage back to {self.triggerer.name}.")
         self.triggerer.do_damage(self.amount, self.caster)
@@ -357,7 +358,7 @@ class CorpseExplosion(Ability):
     trigger = TriggerType.TURN_START
     amount: int = 2
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         adversary_slots = get_adversary_slots(self.caster, ally_slots, enemy_slots)
 
         corpse_slots = [adversary_slot for adversary_slot in adversary_slots if adversary_slot.content and adversary_slot.content.is_dead()]
@@ -383,7 +384,7 @@ class AcidBurst(Ability):
     trigger = TriggerType.DEATH
     amount: int = 3
 
-    def activate(self, ally_slots: Sequence[SlotInterface], enemy_slots: Sequence[SlotInterface]) -> None:
+    def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         adversary_slots = get_adversary_slots(self.caster, ally_slots, enemy_slots)
         viable_targets = [adversary_slot.content for adversary_slot in adversary_slots if adversary_slot.content]
         if not viable_targets:

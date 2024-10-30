@@ -4,10 +4,11 @@ from states.game import Game, GameRenderer
 
 
 if __name__ == '__main__':
+    game = Game()
 
     engine = PygameEngine(
-        Game(),
-        GameRenderer(),
+        game,
+        GameRenderer(game),
         PygameInputListener()
     )
 

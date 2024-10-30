@@ -1,11 +1,12 @@
 from typing import Final
-from pygame import transform
+from pygame import transform, Surface
 
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
+from core.renderer import PygameRenderer
 from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
 from components.character_slot import CharacterSlot, CombatSlot, generate_characters
-from components.drag_dropper import DragDropper, DragDropRenderer
+from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
 from assets.images import IMAGES, ImageChoice
 from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
@@ -64,12 +65,20 @@ class ShopState(State):
             self.next_state = StateChoice.PREPARATION
 
 
-class ShopRenderer(DragDropRenderer):
+class ShopRenderer(PygameRenderer):
     background_image = transform.scale(IMAGES[ImageChoice.BACKGROUND_SHOP_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
-    def draw_frame(self, shop: ShopState):
-        self.frame.blit(self.background_image, (0, 0))
+    def __init__(self, shop_state: ShopState) -> None:
+        super().__init__()
+        self.shop_state = shop_state
 
-        super().draw_frame(shop.drag_dropper)
+    def draw_frame(self):
+        self.render_shop_state(self.frame, self.shop_state)
 
-        draw_button(self.frame, shop.start_combat_button)
+    @staticmethod
+    def render_shop_state(frame: Surface, shop_state: ShopState) -> None:
+        frame.blit(ShopRenderer.background_image, (0, 0))
+
+        draw_drag_dropper(frame, shop_state.drag_dropper)
+
+        draw_button(frame, shop_state.start_combat_button)

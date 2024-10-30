@@ -1,5 +1,6 @@
 from core.input_listener import PygameInputListener
 from core.engine import PygameEngine
+from core.renderer import PygameRenderer
 from core.state_machine import StateMachine, State, StateChoice
 from core.logger import logging # To get baseconfig and set custom debug level
 from components.character import *
@@ -42,10 +43,18 @@ states: dict[StateChoice, State] = {
 
 state_machine = StateMachine(states, StateChoice.BATTLE)
 
+class MockRenderer(PygameRenderer):
+    def __init__(self, game: StateMachine):
+        super().__init__()
+        self.game = game
+
+    def draw_frame(self):
+        GameRenderer.render_game(self.frame, self.game.state)
+
 
 engine = PygameEngine(
     state_machine,
-    GameRenderer(),
+    MockRenderer(state_machine),
     PygameInputListener()
 )
 

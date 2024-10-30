@@ -38,7 +38,7 @@ preparation_state.start_state()
 
 engine = PygameEngine(
     shop_state,
-    ShopRenderer(),
+    ShopRenderer(shop_state),
     PygameInputListener()
 )
 
