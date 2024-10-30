@@ -54,4 +54,18 @@ class ImageChoice(Enum):
     GOLD_ICON                 = "assets/ui/gold.webp"
     GOLD_BACK                 = "assets/ui/goldback.webp"
 
+
+    COMMON_TIER_EGG           = "assets/ui/common.webp"
+    UNCOMMON_TIER_EGG         = "assets/ui/uncommon.webp"
+    RARE_TIER_EGG             = "assets/ui/rare.webp"
+    LEGENDARY_TIER_EGG        = "assets/ui/legendary.webp"
+
+    COMMON_TIER_ICON           = "assets/ui/bronzeicon.webp"
+    UNCOMMON_TIER_ICON         = "assets/ui/silvericon.webp"
+    RARE_TIER_ICON             = "assets/ui/goldicon.webp"
+    LEGENDARY_TIER_ICON        = "assets/ui/crystalicon.webp"   
+
+
+
+
 IMAGES: dict[ImageChoice, Surface] = {character_image: image.load(character_image.value) for character_image in ImageChoice}

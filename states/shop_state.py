@@ -1,4 +1,4 @@
-from typing import Final
+from typing import Final, Type
 from pygame import transform, font, Surface
 import pygame
 import logging
@@ -7,28 +7,8 @@ from functools import lru_cache
 # Import core and component classes
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
-from components.character import (
-    Character,
-    Archeryptrx,
-    Stabiraptor,
-    Tankylosaurus,
-    Macedon,
-    Healamimus,
-    Dilophmageras,
-    Tripiketops,
-    Pterapike,
-    Spinoswordaus,
-    Ateratops,
-    Velocirougue,
-    Alchemixus,
-    Bardomimus,
-    Battlemagodon,
-    Naturalis,
-    Necrorex,
-    Quetza,
-    Krytoraptor,
-    Triceros,
-)
+from components.character import Character
+
 from components.character_slot import (
     CharacterSlot,
     CombatSlot,
@@ -48,28 +28,25 @@ from settings import (
     RED_COLOR,
 )
 
-# Constants
-SHOP_POOL: list[type[Character]] = [
-    Archeryptrx,
-    Stabiraptor,
-    Tankylosaurus,
-    Macedon,
-    Healamimus,
-    Dilophmageras,
-    Tripiketops,
-    Pterapike,
-    Spinoswordaus,
-    Ateratops,
-    Velocirougue,
-    Alchemixus,
-    Bardomimus,
-    Battlemagodon,
-    Naturalis,
-    Necrorex,
-    Quetza,
-    Krytoraptor,
-    Triceros,
-]
+# Function to dynamically create CHARACTER_TIERS dictionary
+def create_character_tiers() -> dict[int, list[Type[Character]]]:
+    character_classes = Character.__subclasses__()
+    character_tiers: dict[int, list[Type[Character]]] = {}
+    for character_class in character_classes:
+        tier = character_class.tier
+        if tier == 0:
+            continue
+        if tier not in character_tiers:
+            character_tiers[tier] = []
+        character_tiers[tier].append(character_class)
+    return character_tiers
+
+# Combined tier dictionary for reference
+CHARACTER_TIERS = create_character_tiers()
+
+# Configurable probabilities for each tier
+TIER_PROBABILITIES = [0.9, 0.08, 0.015, 0.005]
+
 
 SHOP_TOP_LEFT_POSITION: Final[Vector] = (170, 320)
 SHOP_SLOT_NR_ROWS: Final[int] = 1
@@ -177,12 +154,12 @@ class ShopState(State):
         self.gold = STARTING_GOLD
 
     def start_state(self) -> None:
-        generate_characters(self.shop_slots, SHOP_POOL)
+        generate_characters(self.shop_slots,CHARACTER_TIERS,TIER_PROBABILITIES)
 
     def reroll_shop(self) -> None:
         if self.gold >= REROLL_COST:
             self.gold -= REROLL_COST
-            generate_characters(self.shop_slots, SHOP_POOL)
+            generate_characters(self.shop_slots,CHARACTER_TIERS,TIER_PROBABILITIES)
 
     def loop(self, user_input: UserInput) -> None:
         self.drag_dropper.loop(user_input)
@@ -233,6 +210,8 @@ class ShopRenderer(DragDropRenderer):
     def draw_frame(self, shop: ShopState):
         self.frame.blit(self.background_image, (0, 0))
 
+        draw_gold(self.frame, shop.gold)
+
         for slot in shop.shop_slots:
             if slot.content:
                 draw_button(self.frame, slot.buy_button)
@@ -243,4 +222,4 @@ class ShopRenderer(DragDropRenderer):
         super().draw_frame(shop.drag_dropper_shop)
         super().draw_frame(shop.drag_dropper)
 
-        draw_gold(self.frame, shop.gold)
+        

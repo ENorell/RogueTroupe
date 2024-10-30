@@ -1,7 +1,7 @@
 import pygame
-from typing import Final
+from typing import Final, Optional, Sequence, Type
 import logging
-
+from random import choice
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
 from components.character import (
@@ -44,6 +44,12 @@ ENEMY_POOL: Final[list[type[Character]]] = [
     Trilo,
 ]
 
+#Placeholder until enemy setup
+def generate_enemies(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
+    for slot in slots:
+        character_type = choice(character_type_pool)
+        slot.content = character_type()
+
 
 class PreparationState(State):
     def __init__(
@@ -61,7 +67,7 @@ class PreparationState(State):
 
     def start_state(self) -> None:
         logging.info("Entering preparation phase")
-        generate_characters(self.enemy_slots, ENEMY_POOL)
+        generate_enemies(self.enemy_slots, ENEMY_POOL)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:
