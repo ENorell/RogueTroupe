@@ -1,11 +1,9 @@
 from typing import Optional
 import logging
 import pygame
-from pygame import Surface, Rect, draw, transform
 from components.character_slot import CharacterSlot, ShopSlot, draw_slot
 from components.character import draw_character
-from core.interfaces import UserInput
-from core.renderer import PygameRenderer
+from core.interfaces import UserInput, Loopable
 from settings import Vector, DEFAULT_HOVER_SCALE_RATIO
 
 
@@ -18,7 +16,7 @@ def switch_slots(slot_a: CharacterSlot, slot_b: CharacterSlot) -> None:
     logging.debug(f"Switch places between {slot_a_content} and {slot_b_content}")
 
 
-class DragDropper:
+class DragDropper(Loopable):
     """
     Governs the nasty logic needed to drag-drop characters between slots
     """
@@ -39,7 +37,7 @@ class DragDropper:
                 return slot
 
     def loop(self, user_input: UserInput) -> None:
-        self._mouse_position = user_input.mouse_position  # Stored to be able to draw later...
+        self._mouse_position = user_input.mouse_position # Stored to be able to draw later...
 
         for slot in self.slots:
             slot.refresh(user_input.mouse_position)
@@ -65,13 +63,12 @@ class DragDropper:
                 self.detached_slot = hover_slot
 
 
-class DragDropRenderer(PygameRenderer):
-    def draw_frame(self, drag_dropper: DragDropper):
+def draw_drag_dropper(frame: pygame.Surface, drag_dropper: DragDropper) -> None:
 
         # Draw the slots first
         for slot in drag_dropper.slots:
-            draw_slot(self.frame, slot)
-        
+            draw_slot(frame, slot)
+
 
         # Draw characters on top of slots, except for the hovered slot
         hovered_slot = None
@@ -91,7 +88,7 @@ class DragDropRenderer(PygameRenderer):
             scale_ratio = DEFAULT_HOVER_SCALE_RATIO if slot.is_hovered else 1
 
             draw_character(
-                self.frame,
+                frame,
                 position,
                 slot.content,
                 scale_ratio=scale_ratio,
@@ -107,11 +104,9 @@ class DragDropRenderer(PygameRenderer):
             )
             assert hovered_slot.content
             draw_character(
-                self.frame,
+                frame,
                 position,
                 hovered_slot.content,
                 scale_ratio=DEFAULT_HOVER_SCALE_RATIO,
                 slot_is_hovered=True,
             )
-
-

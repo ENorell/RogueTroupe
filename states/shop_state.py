@@ -1,32 +1,19 @@
 from typing import Final, Type
-from pygame import transform, font, Surface
 import pygame
 import logging
 from functools import lru_cache
+from typing import Self
 
-# Import core and component classes
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
-from components.character import Character
-
-from components.character_slot import (
-    CharacterSlot,
-    CombatSlot,
-    ShopSlot,
-    generate_characters,
-)
-from components.drag_dropper import DragDropper, DragDropRenderer
+from core.renderer import PygameRenderer
+from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
+from components.character_slot import CharacterSlot, CombatSlot, ShopSlot, generate_characters
+from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
 from assets.images import IMAGES, ImageChoice
-from settings import (
-    Vector,
-    Color,
-    DISPLAY_WIDTH,
-    DISPLAY_HEIGHT,
-    DEFAULT_TEXT_SIZE,
-    BLACK_COLOR,
-    RED_COLOR,
-)
+from settings import  Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, DEFAULT_TEXT_SIZE, BLACK_COLOR, RED_COLOR
+
 
 # Function to dynamically create CHARACTER_TIERS dictionary
 def create_character_tiers() -> dict[int, list[Type[Character]]]:
@@ -47,15 +34,6 @@ CHARACTER_TIERS = create_character_tiers()
 # Configurable probabilities for each tier
 TIER_PROBABILITIES = [0.9, 0.08, 0.015, 0.005]
 
-
-SHOP_TOP_LEFT_POSITION: Final[Vector] = (170, 320)
-SHOP_SLOT_NR_ROWS: Final[int] = 1
-SHOP_SLOT_NR_COLS: Final[int] = 4
-SHOP_SLOT_DISTANCE_X: Final[int] = 60
-SHOP_SLOT_DISTANCE_Y: Final[int] = 80
-SHOP_SLOT_COLOR: Final[Color] = (119, 64, 36)
-BENCH_SLOT_COLOR: Final[Color] = (54, 68, 90)
-
 STARTING_GOLD: Final[int] = 10
 REROLL_COST: Final[int] = 1
 
@@ -65,32 +43,44 @@ FIGHT_BUTTON_SIZE = 150
 REROLL_BUTTON_POSITION = (350, 50)
 FIGHT_BUTTON_POSITION = (500, 400)
 
-fight_button_image = transform.scale(
+fight_button_image = pygame.transform.scale(
     IMAGES[ImageChoice.FIGHT_BUTTON], (FIGHT_BUTTON_SIZE, FIGHT_BUTTON_SIZE)
 )
-reroll_button_image = transform.scale(
+reroll_button_image = pygame.transform.scale(
     IMAGES[ImageChoice.REROLL_BUTTON], (REROLL_BUTTON_SIZE, REROLL_BUTTON_SIZE)
 )
 
 # Gold icon settings
 GOLD_ICON_SIZE = 90
 GOLD_ICON_POSITION = (10, 10)
-gold_icon_image = transform.scale(
+gold_icon_image = pygame.transform.scale(
     IMAGES[ImageChoice.GOLD_ICON], (GOLD_ICON_SIZE, GOLD_ICON_SIZE)
 )
 
 GOLD_BACK_WIDTH = 80
 GOLD_BACK_HEIGHT = 56
 GOLD_BACK_POSITION = (GOLD_ICON_POSITION[0] + 60, GOLD_ICON_POSITION[1] + 16)
-gold_back_image = transform.scale(
+gold_back_image = pygame.transform.scale(
     IMAGES[ImageChoice.GOLD_BACK], (GOLD_BACK_WIDTH, GOLD_BACK_HEIGHT)
 )
 
 
+class TrashButton(Button):
+    width_pixels = 30
+    height_pixels = 40
+
+    @classmethod
+    def create_below_slot(cls, slot: CharacterSlot) -> Self:
+        slot_x, slot_y = slot.position
+        button_x: int = slot_x + slot.width_pixels // 2 - TrashButton.width_pixels // 2
+        button_y: int = slot_y + slot.height_pixels + TrashButton.width_pixels // 5
+
+        return cls((button_x, button_y), "Trash")
+
 # Utility functions
 @lru_cache(maxsize=128)
 def get_cached_font(font_name: str, font_size: int):
-    return font.SysFont(name=font_name, size=font_size)
+    return pygame.font.SysFont(name=font_name, size=font_size)
 
 
 def switch_slots(slot_a: CharacterSlot, slot_b: CharacterSlot) -> None:
@@ -100,7 +90,7 @@ def switch_slots(slot_a: CharacterSlot, slot_b: CharacterSlot) -> None:
 
 def draw_text(
     text_content: str,
-    window: Surface,
+    window: pygame.Surface,
     center_position: Vector,
     scale_ratio: float = 1,
     font_name: str = "pixel_font",
@@ -116,30 +106,14 @@ def draw_text(
     window.blit(text, text_topleft_position)
 
 
-def create_shop_slots() -> list[ShopSlot]:
-    top_left_x, top_left_y = SHOP_TOP_LEFT_POSITION
-    slots: list[ShopSlot] = []
-    for row in range(SHOP_SLOT_NR_ROWS):
-        for col in range(SHOP_SLOT_NR_COLS):
-            x_position = top_left_x + col * (
-                ShopSlot.width_pixels + SHOP_SLOT_DISTANCE_X
-            )
-            y_position = top_left_y + row * (
-                ShopSlot.height_pixels + SHOP_SLOT_DISTANCE_Y
-            )
-            slots.append(ShopSlot((x_position, y_position), SHOP_SLOT_COLOR))
-    return slots
-
-
-# Shop State Classes
 class ShopState(State):
-    def __init__(
-        self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot]
-    ) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot], shop_slots: list[CharacterSlot], trash_slot: CharacterSlot) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.bench_slots = bench_slots
-        self.shop_slots = create_shop_slots()
+        self.shop_slots = shop_slots
+        self.trash_slot = trash_slot
+        self.trash_button = TrashButton.create_below_slot(trash_slot)
         self.start_combat_button = Button(
             FIGHT_BUTTON_POSITION, "Start Combat", fight_button_image
         )
@@ -147,14 +121,17 @@ class ShopState(State):
             REROLL_BUTTON_POSITION, "Reroll", reroll_button_image
         )
         self.gold = STARTING_GOLD
-        self.drag_dropper = DragDropper(ally_slots + bench_slots, self)
-        self.drag_dropper_shop = DragDropper(self.shop_slots, self)
+        self.drag_dropper       = DragDropper(ally_slots + bench_slots + [trash_slot], self)
+        self.drag_dropper_shop  = DragDropper(self.shop_slots, self)
 
     def reset_gold(self):
         self.gold = STARTING_GOLD
 
     def start_state(self) -> None:
         generate_characters(self.shop_slots,CHARACTER_TIERS,TIER_PROBABILITIES)
+
+    def is_there_allies(self) -> bool:
+        return bool(self.ally_slots)
 
     def reroll_shop(self) -> None:
         if self.gold >= REROLL_COST:
@@ -166,7 +143,8 @@ class ShopState(State):
         self.drag_dropper_shop.loop(user_input)
 
         self.start_combat_button.refresh(user_input.mouse_position)
-        if self.start_combat_button.is_hovered and user_input.is_mouse1_up:
+        if (self.start_combat_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
+            if not self.is_there_allies(): return
             self.next_state = StateChoice.PREPARATION
             self.reset_gold()
 
@@ -178,6 +156,12 @@ class ShopState(State):
             slot.buy_button.refresh(user_input.mouse_position)
             if slot.content and slot.buy_button.is_hovered and user_input.is_mouse1_up:
                 self.buy_unit(slot)
+
+        self.trash_button.refresh(user_input.mouse_position)
+        if self.trash_button.is_hovered and user_input.is_mouse1_up:
+            if not self.trash_slot.content: return
+            self.trash_slot.content = None
+
 
     def spend_gold(self, amount: int) -> bool:
         if self.gold >= amount:
@@ -202,24 +186,30 @@ def draw_gold(shop_frame, balance):
     draw_text(gold_text, shop_frame, gold_text_position, 3.5, "pixel_font", text_color)
 
 
-class ShopRenderer(DragDropRenderer):
-    background_image = transform.scale(
-        IMAGES[ImageChoice.BACKGROUND_SHOP_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT)
-    )
+class ShopRenderer(PygameRenderer):
+    background_image = pygame.transform.scale(IMAGES[ImageChoice.BACKGROUND_SHOP_JUNGLE], (DISPLAY_WIDTH, DISPLAY_HEIGHT))
 
-    def draw_frame(self, shop: ShopState):
-        self.frame.blit(self.background_image, (0, 0))
+    def __init__(self, shop_state: ShopState) -> None:
+        super().__init__()
+        self.shop_state = shop_state
 
-        draw_gold(self.frame, shop.gold)
+    def draw_frame(self):
+        self.render_shop_state(self.frame, self.shop_state)
 
-        for slot in shop.shop_slots:
+    @staticmethod
+    def render_shop_state(frame: pygame.Surface, shop_state: ShopState) -> None:
+        frame.blit(ShopRenderer.background_image, (0, 0))
+
+        draw_gold(frame, shop_state.gold)
+
+        for slot in shop_state.shop_slots:
             if slot.content:
-                draw_button(self.frame, slot.buy_button)
+                draw_button(frame, slot.buy_button)
 
-        draw_button(self.frame, shop.start_combat_button)
-        draw_button(self.frame, shop.reroll_button)
+        draw_button(frame, shop_state.start_combat_button)
+        draw_button(frame, shop_state.reroll_button)
+        draw_button(frame, shop_state.trash_button)
 
-        super().draw_frame(shop.drag_dropper_shop)
-        super().draw_frame(shop.drag_dropper)
+        draw_drag_dropper(frame, shop_state.drag_dropper_shop)
+        draw_drag_dropper(frame, shop_state.drag_dropper)
 
-        

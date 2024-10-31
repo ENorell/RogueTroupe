@@ -12,23 +12,32 @@ class MockGame:
         self.space = user_input.is_space_key_down
 
 class MockPgRenderer(PygameRenderer):
-    def draw_frame(self, loopable: MockGame):
-        if loopable.space:
+    def __init__(self, game: MockGame) -> None:
+        super().__init__()
+        self.game = game
+
+    def draw_frame(self):
+        if self.game.space:
             rect = Rect( (100,100), (100,100)  )
             draw.rect(self.frame, (0,0,0), rect )
 
 class MockCliRenderer(CommandlineRenderer):
-    def render(self, loopable: MockGame) -> None:
-        super().render(loopable)
-        if loopable.space:
+    def __init__(self, game: MockGame) -> None:
+        super().__init__()
+        self.game = game
+
+    def render(self) -> None:
+        super().render()
+        if self.game.space:
             ascii_graphic = "--<OOOO>--"
             print(ascii_graphic, end='\r')
 
+mock_game = MockGame()
 
-engine = PygameEngine(
-    MockGame(),
-    MockPgRenderer(),
-    CrazyInputListener() 
+engine = CommandlineEngine(
+    mock_game,
+    MockCliRenderer(mock_game),
+    KeyboardInputListener()
 )
 
 engine.run()
