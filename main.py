@@ -1,6 +1,6 @@
 import asyncio
 import pygame
-from core.engine import PygameEngine
+from core.interfaces import UserInput
 from core.input_listener import PygameInputListener
 from states.game import Game, GameRenderer
 from settings import GAME_FPS
@@ -9,7 +9,6 @@ pygame.init()
 clock = pygame.time.Clock()
 
 async def main() -> None:
-
 
     loopable = Game()
     renderer = GameRenderer()
@@ -32,7 +31,5 @@ async def main() -> None:
 
     print("Exiting...")
     pygame.quit()
-
-
 
 asyncio.run(main())
