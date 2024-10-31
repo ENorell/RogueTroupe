@@ -1,5 +1,5 @@
-from typing import Final
 from pygame import transform, Surface
+from typing import Self
 
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
@@ -9,7 +9,7 @@ from components.character_slot import CharacterSlot, CombatSlot, generate_charac
 from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
 from assets.images import IMAGES, ImageChoice
-from settings import Vector, Color, DISPLAY_WIDTH, DISPLAY_HEIGHT
+from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
 SHOP_POOL: list[type[Character]] = [
@@ -22,47 +22,49 @@ SHOP_POOL: list[type[Character]] = [
     Archeryptrx
 ]
 
-SHOP_TOP_LEFT_POSITION: Final[Vector] = (170,180)
-SHOP_SLOT_NR_ROWS:  Final[int] = 2
-SHOP_SLOT_NR_COLS:  Final[int] = 4
-SHOP_SLOT_DISTANCE_X: Final[int] = 60
-SHOP_SLOT_DISTANCE_Y: Final[int] = 80
-SHOP_SLOT_COLOR:    Final[Color] = (119, 64, 36)
-BENCH_SLOT_COLOR:   Final[Color] = (54, 68, 90)
+class TrashButton(Button):
+    width_pixels = 50
+    height_pixels = 40
 
+    @classmethod
+    def create_below_slot(cls, slot: CharacterSlot) -> Self:
+        slot_x, slot_y = slot.position
+        button_x: int = slot_x + slot.width_pixels // 2 - TrashButton.width_pixels // 2
+        button_y: int = slot_y + slot.height_pixels + TrashButton.width_pixels // 5
 
-def create_shop_slots() -> list[CharacterSlot]:
-    top_left_x, top_left_y = SHOP_TOP_LEFT_POSITION
-    slots: list[CharacterSlot] = []
-    for row in range(SHOP_SLOT_NR_ROWS):
-        for col in range(SHOP_SLOT_NR_COLS):
-            x_position = top_left_x + col * (CharacterSlot.width_pixels  + SHOP_SLOT_DISTANCE_X)
-            y_position = top_left_y + row * (CharacterSlot.height_pixels + SHOP_SLOT_DISTANCE_Y)
-            slot = CharacterSlot((x_position,y_position), SHOP_SLOT_COLOR)
-            slots.append(slot)    
-    return slots
+        return cls((button_x, button_y), "Trash")
 
 
 class ShopState(State):
-    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot], shop_slots: list[CharacterSlot], trash_slot: CharacterSlot) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.bench_slots = bench_slots
-        self.shop_slots: list[CharacterSlot] = create_shop_slots()
-        self.drag_dropper = DragDropper(ally_slots + bench_slots + self.shop_slots)
-        self.start_combat_button = Button((400,500), "Start Combat")
+        self.shop_slots = shop_slots
+        self.trash_slot = trash_slot
+        self.trash_button = TrashButton.create_below_slot(trash_slot)
+        self.start_combat_button = Button((400, 500), "Start Combat")
+        self.drag_dropper = DragDropper(ally_slots + bench_slots + shop_slots + [trash_slot])
 
 
     def start_state(self) -> None:
         generate_characters(self.shop_slots, SHOP_POOL)
 
+    def is_there_allies(self) -> bool:
+        return bool(self.ally_slots)
 
     def loop(self, user_input: UserInput) -> None:
         self.drag_dropper.loop(user_input)
 
         self.start_combat_button.refresh(user_input.mouse_position)
         if (self.start_combat_button.is_hovered and user_input.is_mouse1_up) or user_input.is_space_key_down:
+            if not self.is_there_allies(): return
             self.next_state = StateChoice.PREPARATION
+
+        self.trash_button.refresh(user_input.mouse_position)
+        if self.trash_button.is_hovered and user_input.is_mouse1_up:
+            if not self.trash_slot.content: return
+            self.trash_slot.content = None
 
 
 class ShopRenderer(PygameRenderer):
@@ -82,3 +84,5 @@ class ShopRenderer(PygameRenderer):
         draw_drag_dropper(frame, shop_state.drag_dropper)
 
         draw_button(frame, shop_state.start_combat_button)
+
+        draw_button(frame, shop_state.trash_button)
