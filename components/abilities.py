@@ -10,40 +10,6 @@ if TYPE_CHECKING: # Forward reference
     from character import Character
     from character_slot import CombatSlot
 
-class CharacterInterface(Protocol): # Put an interface to avoid circular imports
-    damage: int
-    name: str
-    range: int
-    is_defending: bool
-    is_attacking: bool
-    combat_indicator: Optional[str]
-
-    def do_damage(self, amount: int, attacker: CharacterInterface) -> None:
-        ...
-    def restore_health(self, healing: int) -> None:
-        ...
-    def raise_max_health(self, amount: int) -> None:
-        ...
-    def is_dead(self) -> bool:
-        ...
-    def is_full_health(self) -> bool:
-        ...
-    def attack(self) -> None:
-        ...
-    @property
-    def health(self) -> int:
-        ...
-
-class SlotInterface(Protocol):
-    coordinate: int
-
-    @property
-    def content(self) -> Optional[CharacterInterface]:
-        ...
-    @content.setter
-    def content(self, character: Optional[CharacterInterface]):
-        ...
-
 
 class Delay:
     def __init__(self, delay_time_s: float) -> None:
@@ -395,6 +361,32 @@ class AcidBurst(Ability):
         logging.debug(f"{self.caster.name}'s corpse explodes, dealing {self.amount} to {target.name}.")
         target.do_damage(self.amount, self.caster)
         self.is_done = True
+
+class Inspire(Ability):
+    name: str = "Inspire"
+    description: str = "Inspire front ally to attack"
+    trigger = TriggerType.TURN_START
+
+    def activate(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        if ally_slots[0] and ally_slots[0].content != self.caster:
+            self.caster.combat_indicator = self.name
+            logging.debug(f"{self.caster.name} inspires {ally_slots[0].content.name} to attack.")
+            ally_slots[0].content.attack()
+        self.is_done = True
+
+class Potion(Ability):
+    name: str = "Potion"
+    description: str = "If health below 3, heal to max health"
+    trigger = TriggerType.TURN_START
+    duration = Delay(1)
+
+    def activate(self, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> None:
+        if self.caster.health < 3 and self.caster.ability_charges and self.caster.ability_charges > 0:
+            logging.debug(f"{self.caster.name} uses potion to heal.")
+            self.caster.revive()
+            self.caster.consume_ability_charge()
+        self.is_done = True
+
 
 
 #def assassinate(character: "Character", allies: list["CharacterSlot"], enemies: list["CharacterSlot"]) -> None:

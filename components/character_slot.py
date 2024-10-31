@@ -1,8 +1,7 @@
 from pygame import Surface, Rect, draw, transform
-from typing import Final, Optional, Sequence
-from random import choice
-
-from components.interactable import Interactable
+from typing import Final, Optional, Sequence, Type
+from random import choices,choice
+from components.interactable import Interactable,Button
 from components.character import Character
 from settings import Color, Vector, BLACK_COLOR, DISPLAY_WIDTH
 from assets.images import ImageChoice, IMAGES
@@ -17,12 +16,17 @@ DISTANCE_CENTER_TO_SLOTS: Final[int] = 75
 SLOT_HEIGHT: Final[int] = 400
 BENCH_HEIGHT: Final[int] = 500
 BENCH_SLOT_COLOR:   Final[Color] = (54, 68, 90)
-SHOP_TOP_LEFT_POSITION: Final[Vector] = (170,180)
-SHOP_SLOT_NR_ROWS:  Final[int] = 2
-SHOP_SLOT_NR_COLS:  Final[int] = 4
+
+SHOP_TOP_LEFT_POSITION: Final[Vector] = (170, 320)
+SHOP_SLOT_NR_ROWS: Final[int] = 1
+SHOP_SLOT_NR_COLS: Final[int] = 4
 SHOP_SLOT_DISTANCE_X: Final[int] = 60
 SHOP_SLOT_DISTANCE_Y: Final[int] = 80
-SHOP_SLOT_COLOR:    Final[Color] = (119, 64, 36)
+SHOP_SLOT_COLOR: Final[Color] = (119, 64, 36)
+
+BUY_BUTTON_WIDTH = 70
+BUY_BUTTON_HEIGHT = 55
+buy_button_image = transform.scale(IMAGES[ImageChoice.BUY_BUTTON], (BUY_BUTTON_WIDTH, BUY_BUTTON_HEIGHT))
 
 
 class CharacterSlot(Interactable):
@@ -49,6 +53,12 @@ class CombatSlot(CharacterSlot):
     def __init__(self, position: Vector, coordinate: int, color: Color) -> None:
         self.coordinate = coordinate
         super().__init__(position, color)
+
+class ShopSlot(CharacterSlot):
+
+    def __init__(self, position: Vector, color: Color) -> None:
+        super().__init__(position, color)
+        self.buy_button = Button((position[0], position[1] -130), "Buy", buy_button_image)
 
 
 def create_ally_slots() -> list[CombatSlot]:
@@ -80,15 +90,18 @@ def create_bench_slots() -> list[CharacterSlot]:
     return slots
 
 
-def create_shop_slots() -> list[CharacterSlot]:
+def create_shop_slots() -> list[ShopSlot]:
     top_left_x, top_left_y = SHOP_TOP_LEFT_POSITION
-    slots: list[CharacterSlot] = []
+    slots: list[ShopSlot] = []
     for row in range(SHOP_SLOT_NR_ROWS):
         for col in range(SHOP_SLOT_NR_COLS):
-            x_position = top_left_x + col * (CharacterSlot.width_pixels + SHOP_SLOT_DISTANCE_X)
-            y_position = top_left_y + row * (CharacterSlot.height_pixels + SHOP_SLOT_DISTANCE_Y)
-            slot = CharacterSlot((x_position, y_position), SHOP_SLOT_COLOR)
-            slots.append(slot)
+            x_position = top_left_x + col * (
+                ShopSlot.width_pixels + SHOP_SLOT_DISTANCE_X
+            )
+            y_position = top_left_y + row * (
+                ShopSlot.height_pixels + SHOP_SLOT_DISTANCE_Y
+            )
+            slots.append(ShopSlot((x_position, y_position), SHOP_SLOT_COLOR))
     return slots
 
 
@@ -98,9 +111,13 @@ def create_trash_slot() -> CharacterSlot:
     return CharacterSlot((position_x, BENCH_HEIGHT), BENCH_SLOT_COLOR)
 
 
-def generate_characters(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
+def generate_characters(slots: Sequence['CharacterSlot'], character_tiers: dict[int, list[Type[Character]]], tier_probabilities: list[float]) -> None:
     for slot in slots:
-        character_type = choice(character_type_pool)
+        # Select tier based on configured probabilities
+        selected_tier = choices(list(character_tiers.keys()), weights=tier_probabilities, k=1)[0]
+        # Randomly select a character type from the chosen tier
+        character_type = choice(character_tiers[selected_tier])
+        # Assign character to the slot
         slot.content = character_type()
 
 

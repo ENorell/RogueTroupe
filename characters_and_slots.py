@@ -1,9 +1,9 @@
 from core.input_listener import DeafInputListener, PygameInputListener
 from core.engine import PygameEngine
-from states.shop_state import ShopState, ShopRenderer, BENCH_SLOT_COLOR
+from states.shop_state import ShopState, ShopRenderer
 from states.preparation_state import PreparationState, PreparationRenderer
 from components.character import Stabiraptor
-from components.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR
+from components.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR, ShopSlot
 from core.logger import logging
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -16,8 +16,8 @@ ally_slots = [
     ]
 
 bench_slots = [
-    CharacterSlot((25 ,525), BENCH_SLOT_COLOR),
-    CharacterSlot((125,525), BENCH_SLOT_COLOR)
+    CharacterSlot((25 ,525), BATTLE_SLOT_COLOR),
+    CharacterSlot((125,525), BATTLE_SLOT_COLOR)
 ]
 
 enemy_slots = [
@@ -27,10 +27,19 @@ enemy_slots = [
     CombatSlot((725,400), 8, BATTLE_SLOT_COLOR)
     ]
 
+shop_slots = [
+    ShopSlot((225, 300), BATTLE_SLOT_COLOR),
+    ShopSlot((325, 300), BATTLE_SLOT_COLOR),
+    ShopSlot((425, 300), BATTLE_SLOT_COLOR),
+    ShopSlot((525, 300), BATTLE_SLOT_COLOR)
+    ]
+
+trash_slot = CharacterSlot((100, 700), BATTLE_SLOT_COLOR)
+
 ally_slots[0].content = Stabiraptor()
 
 
-shop_state = ShopState(ally_slots, bench_slots)
+shop_state = ShopState(ally_slots, bench_slots, shop_slots, trash_slot)
 shop_state.start_state()
 
 preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)

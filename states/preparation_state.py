@@ -1,12 +1,12 @@
 import pygame
-from typing import Final
+from typing import Final, Optional, Sequence, Type
 import logging
-
+from random import choice
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
 from core.renderer import PygameRenderer
-from components.character import Character, draw_character, Spinoswordaus, Stabiraptor, Pterapike, Ateratops
-from components.character_slot import CharacterSlot, CombatSlot, draw_slot, generate_characters
+from components import character
+from components.character_slot import CharacterSlot, CombatSlot, draw_slot
 from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
 
@@ -14,13 +14,24 @@ from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
-
-ENEMY_POOL: Final[list[type[Character]]] = [
-    Spinoswordaus,
-    Stabiraptor,
-    Pterapike,
-    Ateratops
+ENEMY_POOL: Final[list[type[character.Character]]] = [
+    character.Aepycamelus,
+    character.Brontotherium,
+    character.Cranioceras,
+    character.Glypto,
+    character.Gorgono,
+    character.Mammoth,
+    character.Phorus,
+    character.Sabre,
+    character.Sloth,
+    character.Trilo,
 ]
+
+#Placeholder until enemy setup
+def generate_enemies(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
+    for slot in slots:
+        character_type = choice(character_type_pool)
+        slot.content = character_type()
 
 
 class PreparationState(State):
@@ -30,12 +41,11 @@ class PreparationState(State):
         self.bench_slots = bench_slots
         self.enemy_slots = enemy_slots
         self.drag_dropper = DragDropper(ally_slots + bench_slots)
-        self.continue_button = Button((400,500), "Continue...")
+        self.continue_button = Button((400, 500), "Continue...")
 
     def start_state(self) -> None:
         logging.info("Entering preparation phase")
-        generate_characters(self.enemy_slots, ENEMY_POOL)
-
+        generate_enemies(self.enemy_slots, ENEMY_POOL)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:
@@ -73,15 +83,21 @@ class PreparationRenderer(PygameRenderer):
             scale_ratio = 1.5 if slot.is_hovered else 1
             is_enemy_slot = slot in preparation_state.enemy_slots
 
-            if slot.content: draw_character(frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio = scale_ratio, slot_is_hovered = slot.is_hovered)
+            if not slot.content: continue
+
+            character.draw_character(frame, slot.center_coordinate, slot.content, is_enemy_slot, scale_ratio = scale_ratio, slot_is_hovered = slot.is_hovered)
             
             #Reset defend indicator of enemies
             slot.content.is_defending = False
 
-        #Use the defending indicator to highlight who character will attack
+        # Use the defending indicator to highlight who character will attack
         for slot in preparation_state.ally_slots:
-            if slot.is_hovered:
+            has_target = False
+            if slot.content:
                 for enemy_slot in preparation_state.enemy_slots:
                     if enemy_slot.coordinate - slot.coordinate == slot.content.range:
-                        enemy_slot.content.is_defending = True
-                
+                        has_target = True
+                        if slot.is_hovered:
+                            enemy_slot.content.is_defending = True
+                # if not has_target:
+                #     slot.content.is_attacking = True
