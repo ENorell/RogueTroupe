@@ -8,6 +8,7 @@ from states.combat_state import CombatState
 from states.preparation_state import PreparationState
 from states.shop_state import ShopState
 from states.game import create_ally_slots, create_enemy_slots, create_bench_slots, GameRenderer
+from components.stages import StageEnemyGenerator
 
 logging.getLogger().setLevel(logging.DEBUG)
 
@@ -28,10 +29,12 @@ enemy_slots[1].content = Dilophmageras()
 enemy_slots[2].content = Tripiketops()
 enemy_slots[3].content = Dilophmageras()
 
+enemy_generator = StageEnemyGenerator()
+
 
 combat_state = CombatState(ally_slots, enemy_slots)
 
-preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
+preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots, enemy_generator)
 
 shop_state = ShopState(ally_slots, bench_slots, shop_slots, trash_slot)
 

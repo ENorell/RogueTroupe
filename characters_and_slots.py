@@ -1,5 +1,6 @@
 from core.input_listener import DeafInputListener, PygameInputListener
 from core.engine import PygameEngine
+from components.stages import StageEnemyGenerator
 from states.shop_state import ShopState, ShopRenderer
 from states.preparation_state import PreparationState, PreparationRenderer
 from components.character import Stabiraptor
@@ -42,12 +43,14 @@ ally_slots[0].content = Stabiraptor()
 shop_state = ShopState(ally_slots, bench_slots, shop_slots, trash_slot)
 shop_state.start_state()
 
-preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
+enemy_generator = StageEnemyGenerator()
+
+preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots, enemy_generator)
 preparation_state.start_state()
 
 engine = PygameEngine(
-    shop_state,
-    ShopRenderer(shop_state),
+    preparation_state,
+    PreparationRenderer(preparation_state),
     PygameInputListener()
 )
 

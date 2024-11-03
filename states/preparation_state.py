@@ -1,11 +1,10 @@
 import pygame
-from typing import Final, Optional, Sequence, Type
 import logging
-from random import choice
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
 from core.renderer import PygameRenderer
 from components import character
+from components.stages import EnemyGenerator, draw_stage_number
 from components.character_slot import CharacterSlot, CombatSlot, draw_slot
 from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
@@ -14,38 +13,19 @@ from assets.images import IMAGES, ImageChoice
 from settings import DISPLAY_WIDTH, DISPLAY_HEIGHT
 
 
-ENEMY_POOL: Final[list[type[character.Character]]] = [
-    character.Aepycamelus,
-    character.Brontotherium,
-    character.Cranioceras,
-    character.Glypto,
-    character.Gorgono,
-    character.Mammoth,
-    character.Phorus,
-    character.Sabre,
-    character.Sloth,
-    character.Trilo,
-]
-
-#Placeholder until enemy setup
-def generate_enemies(slots: Sequence[CharacterSlot], character_type_pool: list[type]) -> None:
-    for slot in slots:
-        character_type = choice(character_type_pool)
-        slot.content = character_type()
-
-
 class PreparationState(State):
-    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot], enemy_slots: list[CombatSlot]) -> None:
+    def __init__(self, ally_slots: list[CombatSlot], bench_slots: list[CharacterSlot], enemy_slots: list[CombatSlot], enemy_generator: EnemyGenerator) -> None:
         super().__init__()
         self.ally_slots = ally_slots
         self.bench_slots = bench_slots
         self.enemy_slots = enemy_slots
+        self.enemy_generator = enemy_generator
         self.drag_dropper = DragDropper(ally_slots + bench_slots)
         self.continue_button = Button((400, 500), "Continue...")
 
     def start_state(self) -> None:
         logging.info("Entering preparation phase")
-        generate_enemies(self.enemy_slots, ENEMY_POOL)
+        self.enemy_generator.generate(self.enemy_slots)
 
     def loop(self, user_input: UserInput) -> None:
         for slot in self.enemy_slots:
@@ -76,6 +56,8 @@ class PreparationRenderer(PygameRenderer):
         draw_drag_dropper(frame, preparation_state.drag_dropper)
 
         draw_button(frame, preparation_state.continue_button )
+
+        draw_stage_number(frame, preparation_state.enemy_generator.stage)
 
         for slot in preparation_state.enemy_slots:
             draw_slot(frame, slot)

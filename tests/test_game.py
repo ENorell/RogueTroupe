@@ -14,7 +14,7 @@ def test_game_1000_loops() -> None:
     # Check that the game survives 1000 frames of crazy input without crash
     input_listener = CrazyInputListener()
 
-    test_game = Game()
+    test_game = Game.new_game()
 
     for _ in range(1000):
         user_input = input_listener.capture()

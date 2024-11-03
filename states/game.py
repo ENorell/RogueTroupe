@@ -1,10 +1,11 @@
-from typing import Final
+from typing import Self
 from pygame import Surface
 
 from core.interfaces import Loopable, UserInput
 from core.renderer import PygameRenderer
 from core.state_machine import StateMachine, State, StateChoice
 from components.character_slot import create_ally_slots, create_enemy_slots, create_bench_slots, create_shop_slots, create_trash_slot
+from components.stages import StageEnemyGenerator
 from states.combat_state import CombatState, CombatRenderer
 from states.preparation_state import PreparationState, PreparationRenderer
 from states.shop_state import ShopState, ShopRenderer
@@ -19,7 +20,9 @@ class NoGame(Loopable):
 
 class Game(StateMachine):
 
-    def __init__(self) -> None:
+    @classmethod
+    def new_game(cls) -> Self:
+        enemy_generator = StageEnemyGenerator()
 
         ally_slots  = create_ally_slots()
         enemy_slots = create_enemy_slots()
@@ -28,16 +31,16 @@ class Game(StateMachine):
         trash_slot  = create_trash_slot()
 
         shop_state        = ShopState(ally_slots, bench_slots, shop_slots, trash_slot)
-        preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots)
+        preparation_state = PreparationState(ally_slots, bench_slots, enemy_slots, enemy_generator)
         combat_state      = CombatState(ally_slots, enemy_slots)
 
         states: dict[StateChoice, State] = {
-            StateChoice.SHOP: shop_state,
-            StateChoice.PREPARATION: preparation_state,
-            StateChoice.BATTLE: combat_state
+            StateChoice.SHOP:           shop_state,
+            StateChoice.PREPARATION:    preparation_state,
+            StateChoice.BATTLE:         combat_state
         }
 
-        super().__init__(states, start_state=StateChoice.SHOP)
+        return cls(states, start_state=StateChoice.SHOP)
 
 
 class GameRenderer(PygameRenderer):
