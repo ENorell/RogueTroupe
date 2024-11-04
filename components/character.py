@@ -1,15 +1,16 @@
 from __future__ import annotations
+from functools import lru_cache
 import pygame
-from abc import ABC
+import logging
 from typing import Optional
-from pygame import Surface, Rect, font
-
-from components.abilities import *
+from abc import ABC
+from components import abilities
+from components.ability_handler import Ability, TriggerType
 from assets.images import ImageChoice, IMAGES
 from settings import Vector, BLACK_COLOR, RED_COLOR, DEFAULT_TEXT_SIZE, WHITE_COLOR
+
 TOOLTIP_WIDTH = 380
 TOOLTIP_HEIGHT = 190
-
 RANGE_ICON_HEIGHT = 40
 RANGE_ICON_WIDTH = 50
 CHARACTER_ICON_SCALE = 1
@@ -22,6 +23,7 @@ TRIGGER_TYPE_DESCRIPTIONS = {
     TriggerType.ROUND_START: "Each Round",
     TriggerType.TURN_START: "Each Turn",
 }
+
 class Character(ABC):
     name: str = "Character"
     width_pixels: int = 100
@@ -111,7 +113,7 @@ class Archeryptrx(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_ARCHER
-    ability_type: Optional[type[Ability]] = Volley
+    ability_type: Optional[type[Ability]] = abilities.Volley
     tier: int = 1
 
 class Stabiraptor(Character):
@@ -129,7 +131,7 @@ class Healamimus(Character):
     damage: int = 1
     range: int = 2
     character_image = ImageChoice.CHARACTER_HEALER
-    ability_type: Optional[type[Ability]] = Heal
+    ability_type: Optional[type[Ability]] = abilities.Heal
     tier: int = 1
 
 class Tripiketops(Character):
@@ -138,7 +140,7 @@ class Tripiketops(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_PIKEMAN
-    ability_type: Optional[type[Ability]] = Enrage
+    ability_type: Optional[type[Ability]] = abilities.Enrage
     tier: int = 1
 
 # TIER 2 CHARACTERS
@@ -148,7 +150,7 @@ class Tankylosaurus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_CLUB
-    ability_type: Optional[type[Ability]] = Parry
+    ability_type: Optional[type[Ability]] = abilities.Parry
     tier: int = 2
 
 class Macedon(Character):
@@ -157,7 +159,7 @@ class Macedon(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_CREST
-    ability_type: Optional[type[Ability]] = Devour
+    ability_type: Optional[type[Ability]] = abilities.Devour
     tier: int = 2
 
 class Velocirougue(Character):
@@ -166,7 +168,7 @@ class Velocirougue(Character):
     damage: int = 3
     range: int = 1
     character_image = ImageChoice.CHARACTER_VELO
-    ability_type: Optional[type[Ability]] = Reckless
+    ability_type: Optional[type[Ability]] = abilities.Reckless
     tier: int = 2
 
 class Bardomimus(Character):
@@ -175,7 +177,7 @@ class Bardomimus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_BARD
-    ability_type: Optional[type[Ability]] = Inspire
+    ability_type: Optional[type[Ability]] = abilities.Inspire
     tier: int = 2
 
 class Triceros(Character):
@@ -194,7 +196,7 @@ class Dilophmageras(Character):
     damage: int = 2
     range: int = 3
     character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = AcidBurst
+    ability_type: Optional[type[Ability]] = abilities.AcidBurst
     tier: int = 3
 
 class Ateratops(Character):
@@ -203,7 +205,7 @@ class Ateratops(Character):
     damage: int = 2
     range: int = 1
     character_image = ImageChoice.CHARACTER_SUMMONER
-    ability_type: Optional[type[Ability]] = CorpseExplosion
+    ability_type: Optional[type[Ability]] = abilities.CorpseExplosion
     tier: int = 3
 
 class Krytoraptor(Character):
@@ -231,7 +233,7 @@ class Alchemixus(Character):
     range: int = 2
     ability_charges = 1
     character_image = ImageChoice.CHARACTER_ALCHEMIST
-    ability_type: Optional[type[Ability]] = Potion
+    ability_type: Optional[type[Ability]] = abilities.Potion
     tier: int = 3
 
 # TIER 4 CHARACTERS
@@ -241,7 +243,7 @@ class Spinoswordaus(Character):
     damage: int = 1
     range: int = 1
     character_image = ImageChoice.CHARACTER_SPINO
-    ability_type: Optional[type[Ability]] = Rampage
+    ability_type: Optional[type[Ability]] = abilities.Rampage
     tier: int = 4
 
 class Battlemagodon(Character):
@@ -374,20 +376,20 @@ class Trilo(Character):
 
 
 
-from functools import lru_cache
+
 
 @lru_cache(maxsize=128)
 def get_cached_font(font_name: str, font_size: int):
-    return font.SysFont(name=font_name, size=font_size)
+    return pygame.font.SysFont(name=font_name, size=font_size)
 
-def draw_text(text_content: str, window: Surface, center_position: Vector, scale_ratio: float = 1, font_name: str = "pixel_font", color: tuple[int, int, int] = BLACK_COLOR) -> None:
+def draw_text(text_content: str, window: pygame.Surface, center_position: Vector, scale_ratio: float = 1, font_name: str = "pixel_font", color: tuple[int, int, int] = BLACK_COLOR) -> None:
     font_size: int = round(DEFAULT_TEXT_SIZE * scale_ratio)
     text_font = get_cached_font(font_name, font_size)
     text = text_font.render(text_content, True, color)
     text_topleft_position = (center_position[0] - text.get_width() / 2, center_position[1] - text.get_height() / 2)
     window.blit(text, text_topleft_position)
 
-def add_tier_icon_to_character(frame: Surface, character: Character, rect: Rect):
+def add_tier_icon_to_character(frame: pygame.Surface, character: Character, rect: pygame.Rect):
     # Define the tier icon size
     tier_icon_size = 30  # Adjust this size to fit well within the character image
 
@@ -409,7 +411,7 @@ def add_tier_icon_to_character(frame: Surface, character: Character, rect: Rect)
     # Draw the tier icon onto the frame
     frame.blit(tier_icon, tier_icon_position)
 
-def draw_character(frame: Surface, mid_bottom: Vector, character: Character, is_enemy: bool = False, scale_ratio: float = 1, slot_is_hovered: bool = False):
+def draw_character(frame: pygame.Surface, mid_bottom: Vector, character: Character, is_enemy: bool = False, scale_ratio: float = 1, slot_is_hovered: bool = False):
     character_image, rect = get_character_image(character, mid_bottom, scale_ratio, is_enemy)
     frame.blit(character_image, rect.topleft)
     
@@ -432,7 +434,7 @@ def get_scaled_image(image_key: ImageChoice, size: tuple[int, int], flip: bool =
 
 def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: float, is_enemy: bool) -> tuple[Surface, Rect]:
     image_key = character.corpse_image if character.is_dead() else character.character_image
-    rect = Rect(
+    rect = pygame.Rect(
         (mid_bottom[0] - character.width_pixels * scale_ratio / 2, mid_bottom[1] - character.height_pixels * scale_ratio),
         (character.width_pixels * scale_ratio, character.height_pixels * scale_ratio)
     )
@@ -444,7 +446,7 @@ def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale
     box_width = TOOLTIP_WIDTH
     box_height = TOOLTIP_HEIGHT
 
-    tooltip_rect = Rect(
+    tooltip_rect = pygame.Rect(
         (mid_bottom[0] - box_width / 2, mid_bottom[1] - character.height_pixels - box_height - 40),
         (box_width, box_height)
     )
@@ -471,12 +473,12 @@ def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale
     tier_icon_position = (tooltip_rect.right - tier_icon_size - 10, tooltip_rect.top + 10)
     frame.blit(tier_icon, tier_icon_position)
 
-def draw_tooltip_text(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
+def draw_tooltip_text(frame: pygame.Surface, character: Character, tooltip_rect: pygame.Rect, scale_ratio: float):
     draw_text(f"{character.name}", frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 40), 1.5*scale_ratio, "pixel_font")
     draw_range_icons(frame, character, tooltip_rect, scale_ratio)
     draw_character_ability(frame, character, tooltip_rect, scale_ratio)
 
-def draw_range_icons(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
+def draw_range_icons(frame: pygame.Surface, character: Character, tooltip_rect: pygame.Rect, scale_ratio: float):
     range_icon = get_scaled_image(ImageChoice.SLOT, (RANGE_ICON_WIDTH, RANGE_ICON_HEIGHT))
     total_range_width = (character.range + 1) * RANGE_ICON_WIDTH
     start_x = tooltip_rect.left + (tooltip_rect.width - total_range_width) / 2
@@ -496,7 +498,7 @@ def draw_range_icons(frame: Surface, character: Character, tooltip_rect: Rect, s
         character_image = get_scaled_image(character.character_image, (character_icon_size, character_icon_size))
         frame.blit(character_image, (start_x, tooltip_rect.top + range_indicator_offset - character_icon_size / 2))
 
-def draw_character_ability(frame: Surface, character: Character, tooltip_rect: Rect, scale_ratio: float):
+def draw_character_ability(frame: pygame.Surface, character: Character, tooltip_rect: pygame.Rect, scale_ratio: float):
     if character.ability_type:
         ability_text = f"{character.ability_type.name} : {TRIGGER_TYPE_DESCRIPTIONS.get(character.ability_type.trigger, 'Unknown Trigger')}"
         ability_desc = f"{character.ability_type.description}"
@@ -505,7 +507,7 @@ def draw_character_ability(frame: Surface, character: Character, tooltip_rect: R
     else:
         draw_text("No Ability", frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 125), scale_ratio, "pixel_font")
 
-def draw_character_status(frame: Surface, character: Character, rect: Rect, mid_bottom: Vector, scale_ratio: float):
+def draw_character_status(frame: pygame.Surface, character: Character, rect: pygame.Rect, mid_bottom: Vector, scale_ratio: float):
     if character.is_dead():
         draw_text("DEAD", frame, mid_bottom, scale_ratio, "pixel_font")
     else:
@@ -515,11 +517,11 @@ def draw_character_status(frame: Surface, character: Character, rect: Rect, mid_
         if character.combat_indicator:
             draw_text(character.combat_indicator, frame, (mid_bottom[0], rect.top - 20), 2, "pixel_font", color=RED_COLOR)
 
-def draw_defending_indicator(frame: Surface, rect: Rect):
+def draw_defending_indicator(frame: pygame.Surface, rect: pygame.Rect):
     target_image = get_scaled_image(ImageChoice.COMBAT_TARGET, rect.size)
     frame.blit(target_image, rect.topleft)
 
-def draw_health_and_damage(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
+def draw_health_and_damage(frame: pygame.Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
     health_icon = get_scaled_image(ImageChoice.HEALTH_ICON, (HEALTH_ICON_SIZE, HEALTH_ICON_SIZE))
     health_pos = (mid_bottom[0] - 20 - HEALTH_ICON_SIZE / 2, mid_bottom[1])
     frame.blit(health_icon, health_pos)

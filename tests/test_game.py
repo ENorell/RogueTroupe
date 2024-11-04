@@ -3,7 +3,7 @@ from states.combat_state import CombatState
 from core.input_listener import CrazyInputListener, NoInputListener
 
 from components.character import Healamimus, Spinoswordaus, Tripiketops, Dilophmageras, Character
-from components.abilities import *
+from components import abilities
 from components import character
 from components.character_slot import CharacterSlot, CombatSlot
 from states.combat_state import BattleTurn, BattleRound, AbilityHandler
@@ -83,7 +83,9 @@ def test_enrage_ability() -> None:
 
     slot.content = unit
 
-    handler = AbilityHandler.turn_abilities(unit, [slot], [])
+    basic_attack = abilities.BasicAttack(unit, None)
+
+    handler = AbilityHandler.turn_abilities(unit, [slot], [], basic_attack)
 
     # start execution of planned ability
     handler.activate()
@@ -128,7 +130,7 @@ def test_acid_burst_ability() -> None:
 def test_parry_ability() -> None:
 
     class ParryCharacter(Character):
-        ability_type = Parry
+        ability_type = abilities.Parry
         damage = 0
         range = 1
 
@@ -146,7 +148,7 @@ def test_parry_ability() -> None:
     # The attacker attacks once and is itself damaged
     turn = BattleTurn.start_new_turn(attack_slot, [slot], [attack_slot])
 
-    for _ in range(100):
+    for _ in range(150):
         turn.loop()
 
-    assert attack_character.health == AttackCharacter.max_health - Parry.amount
+    assert attack_character.health == AttackCharacter.max_health - abilities.Parry.amount
