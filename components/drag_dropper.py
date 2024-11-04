@@ -52,7 +52,19 @@ class DragDropper(Loopable):
                 self.detached_slot = None
                 return
 
-            switch_slots(hover_slot, self.detached_slot)
+            #Concept for combining duplicates
+            if hover_slot.content and hover_slot.content.name == self.detached_slot.content.name:
+                #Combine matching characters, take the highest stat and add 1
+                hover_slot.content.max_health = max(hover_slot.content.max_health,self.detached_slot.content.max_health) + 1
+                hover_slot.content.revive()
+                hover_slot.content.damage = max(hover_slot.content.damage,self.detached_slot.content.damage) + 1
+                #Remove the dragged slot
+                self.detached_slot.content = None
+            else:
+                #Otherwise swap normally
+                switch_slots(hover_slot, self.detached_slot)
+
+            
 
             self.detached_slot = None
 
