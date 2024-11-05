@@ -24,6 +24,8 @@ SHOP_SLOT_DISTANCE_X: Final[int] = 60
 SHOP_SLOT_DISTANCE_Y: Final[int] = 80
 SHOP_SLOT_COLOR: Final[Color] = (119, 64, 36)
 
+REWARD_SLOT_NR: Final[int] = 2
+
 BUY_BUTTON_WIDTH = 70
 BUY_BUTTON_HEIGHT = 55
 buy_button_image = transform.scale(IMAGES[ImageChoice.BUY_BUTTON], (BUY_BUTTON_WIDTH, BUY_BUTTON_HEIGHT))
@@ -109,6 +111,18 @@ def create_trash_slot() -> CharacterSlot:
     first_slot_position = SCREEN_CENTER - DISTANCE_CENTER_TO_SLOTS - round(CharacterSlot.width_pixels / 2)
     position_x = first_slot_position - 3 * (DISTANCE_BETWEEN_SLOTS + CharacterSlot.width_pixels)
     return CharacterSlot((position_x, BENCH_HEIGHT), BENCH_SLOT_COLOR)
+
+
+def create_reward_slots() -> list[ShopSlot]:
+    top_left_y = 200
+    top_left_x = ( DISPLAY_WIDTH - REWARD_SLOT_NR * ( SHOP_SLOT_DISTANCE_X + CharacterSlot.width_pixels ) - SHOP_SLOT_DISTANCE_X ) // 2
+    slots: list[ShopSlot] = []
+    for col in range(REWARD_SLOT_NR):
+            x_position = top_left_x + col * (
+                ShopSlot.width_pixels + SHOP_SLOT_DISTANCE_X
+            )
+            slots.append(ShopSlot((x_position, top_left_y), SHOP_SLOT_COLOR))
+    return slots
 
 
 def generate_characters(slots: Sequence['CharacterSlot'], character_tiers: dict[int, list[Type[Character]]], tier_probabilities: list[float]) -> None:

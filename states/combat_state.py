@@ -193,7 +193,7 @@ class CombatState(State):
     def end_combat(self) -> None:
         logging.debug("Continue button clicked, ending combat")
         revive_ally_characters(self.ally_slots)
-        self.next_state = StateChoice.SHOP
+        self.next_state = StateChoice.REWARD
 
     def loop(self, user_input: UserInput) -> None:
         assert self.starting_abilities

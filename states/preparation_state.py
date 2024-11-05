@@ -77,6 +77,7 @@ class PreparationRenderer(PygameRenderer):
             has_target = False
             if slot.content:
                 for enemy_slot in preparation_state.enemy_slots:
+                    if not enemy_slot.content: continue
                     if enemy_slot.coordinate - slot.coordinate == slot.content.range:
                         has_target = True
                         if slot.is_hovered:

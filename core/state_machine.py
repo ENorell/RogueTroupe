@@ -9,6 +9,7 @@ class StateChoice(Enum):
     SHOP        = auto()
     PREPARATION = auto()
     BATTLE      = auto()
+    REWARD      = auto()
 
 
 class State(ABC):
