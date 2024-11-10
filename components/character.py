@@ -61,14 +61,12 @@ class Character(ABC):
     def queue_ability(self, trigger_type: TriggerType, attacker: Optional[Character]) -> None:
         if not self.ability_type: return
         if not self.ability_type.trigger_type == trigger_type: return
-        ability = self.ability_type(self, attacker)
+        ability = self.ability_type.from_trigger(self, attacker)
         self.ability_queue.append(ability)
 
     def die(self, attacker: 'Character') -> None:
         self.queue_ability(TriggerType.DEATH, attacker)
-
-        if attacker is self: logging.debug(f"{self.name} killed themself")
-        else: logging.debug(f"{attacker.name} killed {self.name}")
+        logging.debug(f"{attacker.name} killed {self.name}")
 
     def is_dead(self) -> bool:
         return self._health == 0
@@ -218,7 +216,7 @@ def draw_range_icons(frame: pygame.Surface, character: Character, tooltip_rect: 
 
 def draw_character_ability(frame: pygame.Surface, character: Character, tooltip_rect: pygame.Rect, scale_ratio: float):
     if character.ability_type:
-        ability_text = f"{character.ability_type.name} : {character.ability_type.trigger_type}"
+        ability_text = f"{character.ability_type.name} : {character.ability_type.trigger_type.value}"
         ability_desc = f"{character.ability_type.description}"
         draw_text(ability_text, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 125), scale_ratio, "pixel_font")
         draw_text(ability_desc, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 145), scale_ratio, "pixel_font")

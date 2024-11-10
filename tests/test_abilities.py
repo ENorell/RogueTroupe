@@ -45,7 +45,7 @@ def test_enrage_ability() -> None:
 
     slot.content = unit
 
-    basic_attack = abilities.BasicAttack(unit, None)
+    basic_attack = abilities.BasicAttack(unit)
 
     handler = AbilityHandler.turn_abilities(unit, [slot], [], basic_attack)
 

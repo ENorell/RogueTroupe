@@ -40,9 +40,9 @@ class Ability(ABC):
     trigger_type: TriggerType
     is_done: bool = False
 
-    def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
+    def __init__(self, caster: "Character") -> None:
         self.caster = caster
-        self.triggerer = triggerer
+        self.triggerer: Optional["Character"] = None
         self.duration = Delay(ABILITY_DURATION_S)
         self.targets: list["Character"] = []
         self.has_searched_targets = False
@@ -83,9 +83,14 @@ class Ability(ABC):
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         ...
 
+    def set_triggerer(self, triggerer: Optional["Character"]) -> None:
+        self.triggerer = triggerer
+
     @classmethod
-    def from_plan(cls, caster: "Character") -> Self:
-        return cls(caster, triggerer=None)
+    def from_trigger(cls, caster: "Character", triggerer: Optional["Character"]) -> Self:
+        instance = cls(caster)
+        instance.set_triggerer(triggerer)
+        return instance
 
     @abstractmethod
     def activate(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -102,7 +107,7 @@ class Ability(ABC):
 def get_character_ability(character: "Character", trigger_type: TriggerType) -> Optional[Ability]:
     if not character.ability_type: return
     if not character.ability_type.trigger_type == trigger_type: return
-    return character.ability_type.from_plan(character)
+    return character.ability_type(character)
 
 
 def get_trigger_abilities(ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"], trigger_type: TriggerType) -> list[Ability]:
@@ -112,7 +117,7 @@ def get_trigger_abilities(ally_slots: list["CombatSlot"], enemy_slots: list["Com
         if slot.content.is_dead(): continue
         if not slot.content.ability_type: continue
         if not slot.content.ability_type.trigger_type == trigger_type: continue
-        ability = slot.content.ability_type.from_plan(slot.content)
+        ability = slot.content.ability_type(slot.content)
         ability_queue.append(ability)
     return ability_queue
 

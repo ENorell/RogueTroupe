@@ -33,7 +33,7 @@ class BattleTurn:
     def start_new_turn(cls, acting_slot: CombatSlot, ally_slots: list[CombatSlot], enemy_slots: list[CombatSlot]) -> Self:
         assert acting_slot.content  # We should never be here if it was empty
         character: Character = acting_slot.content
-        basic_attack = BasicAttack.from_plan(character)
+        basic_attack = BasicAttack(character)
         turn_abilities: AbilityHandler = AbilityHandler.turn_abilities(character, ally_slots, enemy_slots, basic_attack)
         new_turn = cls(character, acting_slot, ally_slots, enemy_slots, turn_abilities)
         return new_turn
