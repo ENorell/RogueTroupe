@@ -1,6 +1,5 @@
-#from __future__ import annotations
 from typing import TYPE_CHECKING, Final, Optional, Self
-from enum import Enum, auto
+from enum import Enum
 from abc import ABC, abstractmethod
 from settings import GAME_FPS
 import logging
@@ -27,18 +26,18 @@ class Delay:
 
 
 class TriggerType(Enum):
-    COMBAT_START    = auto()
-    ROUND_START     = auto()
-    TURN_START      = auto()
-    ATTACK          = auto()
-    DEFEND          = auto()
-    DEATH           = auto()
+    COMBAT_START    = "Combat Start"
+    ROUND_START     = "Each Round"
+    TURN_START      = "Each Turn"
+    ATTACK          = "On Attack"
+    DEFEND          = "On Defend"
+    DEATH           = "On Death"
 
 
 class Ability(ABC):
     name: str
     description: str
-    trigger: TriggerType
+    trigger_type: TriggerType
     is_done: bool = False
 
     def __init__(self, caster: "Character", triggerer: Optional["Character"]) -> None:
@@ -102,7 +101,7 @@ class Ability(ABC):
 
 def get_character_ability(character: "Character", trigger_type: TriggerType) -> Optional[Ability]:
     if not character.ability_type: return
-    if not character.ability_type.trigger == trigger_type: return
+    if not character.ability_type.trigger_type == trigger_type: return
     return character.ability_type.from_plan(character)
 
 
@@ -112,7 +111,7 @@ def get_trigger_abilities(ally_slots: list["CombatSlot"], enemy_slots: list["Com
         if not slot.content: continue
         if slot.content.is_dead(): continue
         if not slot.content.ability_type: continue
-        if not slot.content.ability_type.trigger == trigger_type: continue
+        if not slot.content.ability_type.trigger_type == trigger_type: continue
         ability = slot.content.ability_type.from_plan(slot.content)
         ability_queue.append(ability)
     return ability_queue

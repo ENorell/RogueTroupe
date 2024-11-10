@@ -1,8 +1,9 @@
+import logging
 from core.input_listener import PygameInputListener
 from core.engine import PygameEngine
 from core.renderer import PygameRenderer
 from core.state_machine import StateMachine, State, StateChoice
-from components.character import *
+from components.character_pool import *
 from components.character_slot import CharacterSlot, CombatSlot, create_shop_slots, ShopSlot, create_trash_slot, \
     create_reward_slots
 from states.combat_state import CombatState

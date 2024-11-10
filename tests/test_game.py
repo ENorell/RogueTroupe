@@ -1,7 +1,7 @@
 from states.game import Game, create_enemy_slots, create_ally_slots
 from states.combat_state import CombatState
 from core.input_listener import CrazyInputListener, NoInputListener
-from components import character
+from components import character_pool
 
 
 def test_game_1000_loops() -> None:
@@ -18,14 +18,14 @@ def test_game_1000_loops() -> None:
 def test_combat_1000_loops() -> None:
     ally_slots = create_ally_slots()
     enemy_slots = create_enemy_slots()
-    ally_slots[0].content = character.Macedon()
-    ally_slots[1].content = character.Macedon()
-    ally_slots[2].content = character.Healamimus()
-    ally_slots[3].content = character.Archeryptrx()
-    enemy_slots[0].content = character.Dilophmageras()
-    enemy_slots[1].content = character.Tripiketops()
-    enemy_slots[2].content = character.Tripiketops()
-    enemy_slots[3].content = character.Dilophmageras()
+    ally_slots[0].content = character_pool.Macedon()
+    ally_slots[1].content = character_pool.Macedon()
+    ally_slots[2].content = character_pool.Healamimus()
+    ally_slots[3].content = character_pool.Archeryptrx()
+    enemy_slots[0].content = character_pool.Dilophmageras()
+    enemy_slots[1].content = character_pool.Tripiketops()
+    enemy_slots[2].content = character_pool.Tripiketops()
+    enemy_slots[3].content = character_pool.Dilophmageras()
 
     combat_state = CombatState(ally_slots, enemy_slots)
     combat_state.start_state()

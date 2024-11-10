@@ -3,32 +3,33 @@ from abc import ABC, abstractmethod
 from random import choice
 import pygame
 from components.interactable import draw_text
-from components import character
+from components import character_pool
+from components.character import Character
 from components.character_slot import CombatSlot
 from settings import BLACK_COLOR, WHITE_COLOR
 
 
-ENEMY_POOL: Final[list[type[character.Character]]] = [
-    character.Aepycamelus,
-    character.Brontotherium,
-    character.Cranioceras,
-    character.Glypto,
-    character.Gorgono,
-    character.Mammoth,
-    character.Phorus,
-    character.Sabre,
-    character.Sloth,
-    character.Trilo,
+ENEMY_POOL: Final[list[type[Character]]] = [
+    character_pool.Aepycamelus,
+    character_pool.Brontotherium,
+    character_pool.Cranioceras,
+    character_pool.Glypto,
+    character_pool.Gorgono,
+    character_pool.Mammoth,
+    character_pool.Phorus,
+    character_pool.Sabre,
+    character_pool.Sloth,
+    character_pool.Trilo,
 ]
 
-ENEMY_STAGES: list[list[character.Character]] = [
-    [character.Trilo(), character.Trilo()],
-    [character.Mammoth()],
-    [character.Aepycamelus(), character.Aepycamelus(), character.Aepycamelus()],
-    [character.Sloth(), character.Sloth(), character.Sloth()],
-    [character.Phorus(), character.Sabre()],
-    [character.Brontotherium(), character.Cranioceras()],
-    [character.Glypto(), character.Gorgono()]
+ENEMY_STAGES: list[list[Character]] = [
+    [character_pool.Trilo(),            character_pool.Trilo()],
+    [character_pool.Mammoth()],
+    [character_pool.Aepycamelus(),      character_pool.Aepycamelus(),   character_pool.Aepycamelus()],
+    [character_pool.Sloth(),            character_pool.Sloth(),         character_pool.Sloth()],
+    [character_pool.Phorus(),           character_pool.Sabre()],
+    [character_pool.Brontotherium(),    character_pool.Cranioceras()],
+    [character_pool.Glypto(),           character_pool.Gorgono()]
     ]
 
 

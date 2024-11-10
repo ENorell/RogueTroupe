@@ -4,7 +4,7 @@ from components.stages import StageEnemyGenerator
 from states.shop_state import ShopState, ShopRenderer
 from states.preparation_state import PreparationState, PreparationRenderer
 from states.reward_state import RewardState, RewardRenderer
-from components.character import Stabiraptor
+from components.character_pool import Stabiraptor
 from components.character_slot import CharacterSlot, CombatSlot, BATTLE_SLOT_COLOR, ShopSlot
 from core.logger import logging
 logging.getLogger().setLevel(logging.DEBUG)

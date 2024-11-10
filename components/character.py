@@ -4,7 +4,6 @@ import pygame
 import logging
 from typing import Optional
 from abc import ABC
-from components import abilities
 from components.ability_handler import Ability, TriggerType
 from assets.images import ImageChoice, IMAGES
 from settings import Vector, BLACK_COLOR, RED_COLOR, DEFAULT_TEXT_SIZE, WHITE_COLOR
@@ -17,19 +16,13 @@ CHARACTER_ICON_SCALE = 1
 HEALTH_ICON_SIZE = 30
 DAMAGE_ICON_SIZE = 30
 
-# Define a mapping for user-friendly descriptions
-TRIGGER_TYPE_DESCRIPTIONS = {
-    TriggerType.COMBAT_START: "Combat Start",
-    TriggerType.ROUND_START: "Each Round",
-    TriggerType.TURN_START: "Each Turn",
-}
 
 class Character(ABC):
     name: str = "Character"
     width_pixels: int = 100
     height_pixels: int = 100
     max_health: int = 5
-    damage: int = 2
+    damage: int = 2 # Put into basic attack instead?
     range: int = 1
     ability_type: Optional[type[Ability]] = None
     ability_charges = None
@@ -39,13 +32,15 @@ class Character(ABC):
 
     def __init__(self) -> None:
         self._health = self.max_health
+        self.ability_queue: list[Ability] = []
+
+        self.target = None
+        self.attacker = None
+
+        self.combat_indicator: Optional[str] = None
         self.is_attacking = False
         self.is_defending = False
         self.is_waiting = False
-        self.target = None
-        self.attacker = None
-        self.combat_indicator: Optional[str] = None
-        self.ability_queue: list[Ability] = []
 
     def attack(self) -> None:
         self.queue_ability(TriggerType.ATTACK, attacker=None)
@@ -65,7 +60,7 @@ class Character(ABC):
 
     def queue_ability(self, trigger_type: TriggerType, attacker: Optional[Character]) -> None:
         if not self.ability_type: return
-        if not self.ability_type.trigger == trigger_type: return
+        if not self.ability_type.trigger_type == trigger_type: return
         ability = self.ability_type(self, attacker)
         self.ability_queue.append(ability)
 
@@ -91,289 +86,12 @@ class Character(ABC):
         self._health = self.max_health
 
     def consume_ability_charge(self) -> None:
+        assert self.ability_charges
         self.ability_charges -= 1
 
     @property
     def health(self) -> int:
         return self._health
-
-# TIER 1 CHARACTERS
-class Pterapike(Character):
-    name: str = "Pterapike"
-    max_health: int = 4
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_PTERO
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 1
-
-class Archeryptrx(Character):
-    name: str = "Archeryptrx"
-    max_health: int = 3
-    damage: int = 1
-    range: int = 2
-    character_image = ImageChoice.CHARACTER_ARCHER
-    ability_type: Optional[type[Ability]] = abilities.Volley
-    tier: int = 1
-
-class Stabiraptor(Character):
-    name: str = "Stabiraptor"
-    max_health: int = 3
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_ASSASSIN_RAPTOR
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 1
-
-class Healamimus(Character):
-    name: str = "Healamimus"
-    max_health: int = 4
-    damage: int = 1
-    range: int = 2
-    character_image = ImageChoice.CHARACTER_HEALER
-    ability_type: Optional[type[Ability]] = abilities.Heal
-    tier: int = 1
-
-class Tripiketops(Character):
-    name: str = "Tripiketops"
-    max_health: int = 6
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_PIKEMAN
-    ability_type: Optional[type[Ability]] = abilities.Enrage
-    tier: int = 1
-
-# TIER 2 CHARACTERS
-class Tankylosaurus(Character):
-    name: str = "Tankylosaurus"
-    max_health: int = 7
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_CLUB
-    ability_type: Optional[type[Ability]] = abilities.Parry
-    tier: int = 2
-
-class Macedon(Character):
-    name: str = "Macedon"
-    max_health: int = 4
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_CREST
-    ability_type: Optional[type[Ability]] = abilities.Devour
-    tier: int = 2
-
-class Velocirougue(Character):
-    name: str = "Velocirougue"
-    max_health: int = 5
-    damage: int = 3
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_VELO
-    ability_type: Optional[type[Ability]] = abilities.Reckless
-    tier: int = 2
-
-class Bardomimus(Character):
-    name: str = "Bardomimus"
-    max_health: int = 3
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_BARD
-    ability_type: Optional[type[Ability]] = abilities.Inspire
-    tier: int = 2
-
-class Triceros(Character):
-    name: str = "Triceros"
-    max_health: int = 7
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_DEFENDER
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 2
-
-# TIER 3 CHARACTERS
-class Dilophmageras(Character):
-    name: str = "Dilophmageras"
-    max_health: int = 3
-    damage: int = 2
-    range: int = 3
-    character_image = ImageChoice.CHARACTER_DILOPHMAGE
-    ability_type: Optional[type[Ability]] = abilities.AcidBurst
-    tier: int = 3
-
-class Ateratops(Character):
-    name: str = "Ateratops"
-    max_health: int = 3
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_SUMMONER
-    ability_type: Optional[type[Ability]] = abilities.CorpseExplosion
-    tier: int = 3
-
-class Krytoraptor(Character):
-    name: str = "Krytoraptor"
-    max_health: int = 3
-    damage: int = 4
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_RAPTOR
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 3
-
-class Naturalis(Character):
-    name: str = "Naturalis"
-    max_health: int = 4
-    damage: int = 1
-    range: int = 3
-    character_image = ImageChoice.CHARACTER_NATURE_MAGE
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 3
-
-class Alchemixus(Character):
-    name: str = "Alchemixus"
-    max_health: int = 6
-    damage: int = 1
-    range: int = 2
-    ability_charges = 1
-    character_image = ImageChoice.CHARACTER_ALCHEMIST
-    ability_type: Optional[type[Ability]] = abilities.Potion
-    tier: int = 3
-
-# TIER 4 CHARACTERS
-class Spinoswordaus(Character):
-    name: str = "Spinoswordaus"
-    max_health: int = 6
-    damage: int = 1
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_SPINO
-    ability_type: Optional[type[Ability]] = abilities.Rampage
-    tier: int = 4
-
-class Battlemagodon(Character):
-    name: str = "Battlemagodon"
-    max_health: int = 5
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_BATTLE_MAGE
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 4
-
-class Necrorex(Character):
-    name: str = "Necrorex"
-    max_health: int = 3
-    damage: int = 2
-    range: int = 2
-    character_image = ImageChoice.CHARACTER_NECROMANCER
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 4
-
-class Quetza(Character):
-    name: str = "Quetza"
-    max_health: int = 4
-    damage: int = 3
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_QUETZALCOATLUS
-    ability_type: Optional[type[Ability]] = None
-    tier: int = 4
-
-
-#ENEMIES
-class Aepycamelus(Character):
-    """A tall, long-necked herbivore with swift kicks"""
-    name: str = "Aepycamelus"
-    max_health: int = 5
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_AEPYCAMELUS
-    ability_type: Optional[type[Ability]] = None
-
-
-class Brontotherium(Character):
-    """A massive beast with a powerful charge"""
-    name: str = "Brontotherium"
-    max_health: int = 8
-    damage: int = 3
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_BRONTOTHERIUM
-    ability_type: Optional[type[Ability]] = None
-
-
-class Cranioceras(Character):
-    """A headbutting herbivore with strong defensive abilities"""
-    name: str = "Cranioceras"
-    max_health: int = 6
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_CRANIOCERAS
-    ability_type: Optional[type[Ability]] = None
-
-
-class Glypto(Character):
-    """An armored tank with a heavy tail swipe"""
-    name: str = "Glypto"
-    max_health: int = 7
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_GLYPTO
-    ability_type: Optional[type[Ability]] = None
-
-
-class Gorgono(Character):
-    """A fierce predator with a deadly bite"""
-    name: str = "Gorgono"
-    max_health: int = 4
-    damage: int = 5
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_GORGONO
-    ability_type: Optional[type[Ability]] = None
-
-
-class Mammoth(Character):
-    """A woolly giant with a trunk slam ability"""
-    name: str = "Mammoth"
-    max_health: int = 9
-    damage: int = 3
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_MAMMOTH
-    ability_type: Optional[type[Ability]] = None
-
-
-class Phorus(Character):
-    """A fast-running bird with a piercing beak attack"""
-    name: str = "Phorus"
-    max_health: int = 3
-    damage: int = 4
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_PHORUS
-    ability_type: Optional[type[Ability]] = None
-
-
-class Sabre(Character):
-    """A stealthy cat with a sharp bite"""
-    name: str = "Sabre"
-    max_health: int = 4
-    damage: int = 4
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_SABRE
-    ability_type: Optional[type[Ability]] = None
-
-
-class Sloth(Character):
-    """A slow-moving giant with a powerful claw attack"""
-    name: str = "Sloth"
-    max_health: int = 6
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_SLOTH
-    ability_type: Optional[type[Ability]] = None
-
-
-class Trilo(Character):
-    """An ancient armored invertebrate with a hard shell"""
-    name: str = "Trilo"
-    max_health: int = 5
-    damage: int = 2
-    range: int = 1
-    character_image = ImageChoice.CHARACTER_TRILO
-    ability_type: Optional[type[Ability]] = None
-
 
 
 
@@ -425,14 +143,14 @@ def draw_character(frame: pygame.Surface, mid_bottom: Vector, character: Charact
 
 
 @lru_cache(maxsize=128)
-def get_scaled_image(image_key: ImageChoice, size: tuple[int, int], flip: bool = False) -> Surface:
+def get_scaled_image(image_key: ImageChoice, size: tuple[int, int], flip: bool = False) -> pygame.Surface:
     character_image = IMAGES[image_key].convert_alpha()
     character_image = pygame.transform.scale(character_image, size)
     if flip:
         character_image = pygame.transform.flip(character_image, True, False)
     return character_image
 
-def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: float, is_enemy: bool) -> tuple[Surface, Rect]:
+def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: float, is_enemy: bool) -> tuple[pygame.Surface, pygame.Rect]:
     image_key = character.corpse_image if character.is_dead() else character.character_image
     rect = pygame.Rect(
         (mid_bottom[0] - character.width_pixels * scale_ratio / 2, mid_bottom[1] - character.height_pixels * scale_ratio),
@@ -442,7 +160,7 @@ def get_character_image(character: Character, mid_bottom: Vector, scale_ratio: f
     character_image = get_scaled_image(image_key, rect.size, flip=is_enemy)
     return character_image, rect
 
-def draw_tooltip(frame: Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
+def draw_tooltip(frame: pygame.Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
     box_width = TOOLTIP_WIDTH
     box_height = TOOLTIP_HEIGHT
 
@@ -500,7 +218,7 @@ def draw_range_icons(frame: pygame.Surface, character: Character, tooltip_rect: 
 
 def draw_character_ability(frame: pygame.Surface, character: Character, tooltip_rect: pygame.Rect, scale_ratio: float):
     if character.ability_type:
-        ability_text = f"{character.ability_type.name} : {TRIGGER_TYPE_DESCRIPTIONS.get(character.ability_type.trigger, 'Unknown Trigger')}"
+        ability_text = f"{character.ability_type.name} : {character.ability_type.trigger_type}"
         ability_desc = f"{character.ability_type.description}"
         draw_text(ability_text, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 125), scale_ratio, "pixel_font")
         draw_text(ability_desc, frame, (tooltip_rect.left + tooltip_rect.width / 2, tooltip_rect.top + 145), scale_ratio, "pixel_font")
@@ -523,13 +241,13 @@ def draw_defending_indicator(frame: pygame.Surface, rect: pygame.Rect):
 
 def draw_health_and_damage(frame: pygame.Surface, character: Character, mid_bottom: Vector, scale_ratio: float):
     health_icon = get_scaled_image(ImageChoice.HEALTH_ICON, (HEALTH_ICON_SIZE, HEALTH_ICON_SIZE))
-    health_pos = (mid_bottom[0] - 20 - HEALTH_ICON_SIZE / 2, mid_bottom[1])
+    health_pos = (mid_bottom[0] - 20 - HEALTH_ICON_SIZE // 2, mid_bottom[1])
     frame.blit(health_icon, health_pos)
     health_text = f"{character.health}"
-    draw_text(health_text, frame, (health_pos[0] + HEALTH_ICON_SIZE / 2, health_pos[1] + 0.8 * HEALTH_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
+    draw_text(health_text, frame, (health_pos[0] + HEALTH_ICON_SIZE // 2, health_pos[1] + HEALTH_ICON_SIZE // 5 * 4), 2, "pixel_font", color=WHITE_COLOR)
 
     damage_icon = get_scaled_image(ImageChoice.DAMAGE_ICON, (DAMAGE_ICON_SIZE, DAMAGE_ICON_SIZE))
-    damage_pos = (mid_bottom[0] + 20 - DAMAGE_ICON_SIZE / 2, mid_bottom[1])
+    damage_pos = (mid_bottom[0] + 20 - DAMAGE_ICON_SIZE // 2, mid_bottom[1])
     frame.blit(damage_icon, damage_pos)
     damage_text = f"{character.damage}"
-    draw_text(damage_text, frame, (damage_pos[0] + DAMAGE_ICON_SIZE / 2, damage_pos[1] + 0.8 * DAMAGE_ICON_SIZE), 2, "pixel_font", color=WHITE_COLOR)
+    draw_text(damage_text, frame, (damage_pos[0] + DAMAGE_ICON_SIZE // 2, damage_pos[1] + DAMAGE_ICON_SIZE // 5 * 4), 2, "pixel_font", color=WHITE_COLOR)

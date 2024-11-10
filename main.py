@@ -10,8 +10,8 @@ clock = pygame.time.Clock()
 
 async def main() -> None:
 
-    loopable = Game.new_game()
-    renderer = GameRenderer(loopable)
+    game = Game.new_game()
+    renderer = GameRenderer(game)
     input_listener = PygameInputListener()
 
     running = True
@@ -20,7 +20,7 @@ async def main() -> None:
 
         user_input: UserInput = input_listener.capture()
 
-        loopable.loop(user_input)
+        game.loop(user_input)
 
         renderer.render()
 

@@ -1,4 +1,5 @@
-from components.character import Healamimus, Spinoswordaus, Tripiketops, Dilophmageras, Character
+from components.character import Character
+from components import character_pool
 from components import abilities
 from components.character_slot import CombatSlot
 from states.combat_state import BattleTurn, BattleRound, AbilityHandler
@@ -11,7 +12,7 @@ def test_character_heal_ability() -> None:
     Test that the round-start healing ability works
     """
 
-    unit = Healamimus()
+    unit = character_pool.Healamimus()
     slot.content = unit
 
     unit.lose_health(2)
@@ -23,12 +24,12 @@ def test_character_heal_ability() -> None:
     for _ in range(100):
         battle_round.loop()
 
-    assert unit.health == Healamimus.max_health - 1
+    assert unit.health == character_pool.Healamimus.max_health - 1
 
 
 def test_character_rampage_ability() -> None:
 
-    unit = Spinoswordaus()
+    unit = character_pool.Spinoswordaus()
     slot.content = unit
 
     turn = BattleTurn.start_new_turn(slot, [slot], [])
@@ -36,11 +37,11 @@ def test_character_rampage_ability() -> None:
     for _ in range(100):
         turn.loop()
 
-    assert unit.damage == Spinoswordaus.damage + 1
+    assert unit.damage == character_pool.Spinoswordaus.damage + 1
 
 
 def test_enrage_ability() -> None:
-    unit = Tripiketops()
+    unit = character_pool.Tripiketops()
 
     slot.content = unit
 
@@ -63,7 +64,7 @@ def test_enrage_ability() -> None:
         handler.activate()
 
     # Finally should have enraged twice
-    assert unit.damage == Tripiketops.damage + 2
+    assert unit.damage == character_pool.Tripiketops.damage + 2
 
 
 def test_acid_burst_ability() -> None:
@@ -71,10 +72,10 @@ def test_acid_burst_ability() -> None:
     Test that the on-death ability works
     """
     enemy_slot = CombatSlot((0, 0), 100, (0, 0, 0))
-    enemy_character = Spinoswordaus()
+    enemy_character = character_pool.Spinoswordaus()
     enemy_slot.content = enemy_character
 
-    unit = Dilophmageras()
+    unit = character_pool.Dilophmageras()
     slot.content = unit
 
     turn = BattleTurn.start_new_turn(slot, [slot], [enemy_slot])
@@ -85,7 +86,7 @@ def test_acid_burst_ability() -> None:
     for _ in range(100):
         turn.loop()
 
-    assert enemy_character.health == Spinoswordaus.max_health - 3
+    assert enemy_character.health == character_pool.Spinoswordaus.max_health - 3
 
 
 def test_parry_ability() -> None:
@@ -137,6 +138,7 @@ def test_corpse_explosion_ability() -> None:
     caster_slot.content = caster_character
     enemy_slot.content = victim_character
 
+    # Make into corpse
     corpse_character.do_damage(CorpseCharacter.max_health, victim_character)
 
     turn = BattleTurn.start_new_turn(caster_slot, [caster_slot, slot], [enemy_slot])

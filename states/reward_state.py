@@ -9,8 +9,9 @@ from core.state_machine import State, StateChoice
 from components.character_slot import CharacterSlot, CombatSlot, ShopSlot, draw_slot
 from components.interactable import Button, draw_button
 from components.character import draw_character
+from components.character_pool import generate_characters, CHARACTER_TIERS, TIER_PROBABILITIES
 from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT
-from states.shop_state import generate_characters, CHARACTER_TIERS, TIER_PROBABILITIES, fight_button_image, TrashButton
+from states.shop_state import fight_button_image, TrashButton
 from assets.images import IMAGES, ImageChoice
 
 

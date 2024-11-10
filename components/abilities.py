@@ -62,7 +62,7 @@ class BasicAttack(Ability):
 class Rampage(Ability):
     name: str = "Rampage"
     description: str = "Attacking: gain 1 attack"
-    trigger = TriggerType.TURN_START
+    trigger_type = TriggerType.TURN_START
 
     @property
     def target_indicator(self) -> str:
@@ -81,7 +81,7 @@ class Volley(Ability):
     amount: int = 1
     hits: int = 2
     description: str = f"Combat start: {amount} damage to {hits} random enemies"
-    trigger = TriggerType.COMBAT_START
+    trigger_type = TriggerType.COMBAT_START
 
     @property
     def target_indicator(self) -> str:
@@ -107,7 +107,7 @@ class Volley(Ability):
 class Heal(Ability):
     name: str = "Heal"
     description: str = "Attacking: heal lowest health ally by 1"
-    trigger = TriggerType.ROUND_START
+    trigger_type = TriggerType.ROUND_START
     healing: int = 1
 
     @property
@@ -135,7 +135,7 @@ class Heal(Ability):
 class Reckless(Ability):
     name: str = "Reckless"
     description: str = "Loses 1 health when attacking."
-    trigger = TriggerType.TURN_START
+    trigger_type = TriggerType.TURN_START
     damage: int = 1
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -153,7 +153,7 @@ class Reckless(Ability):
 class Devour(Ability):
     name: str = "Devour"
     description: str = "Gains 1 max health when attacking."
-    trigger = TriggerType.ATTACK
+    trigger_type = TriggerType.ATTACK
     amount: int = 1
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -172,7 +172,7 @@ class Devour(Ability):
 class Enrage(Ability):
     name: str = "Enrage"
     description: str = "Gains 1 damage when damaged."
-    trigger = TriggerType.DEFEND
+    trigger_type = TriggerType.DEFEND
     amount: int = 1
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -191,7 +191,7 @@ class Parry(Ability):
     name: str = "Parry"
     amount: int = 1
     description: str = f"Parries and deals {amount} damage back to the attacker"
-    trigger = TriggerType.DEFEND
+    trigger_type = TriggerType.DEFEND
 
     @property
     def target_indicator(self) -> str:
@@ -211,7 +211,7 @@ class Parry(Ability):
 class CorpseExplosion(Ability):
     name: str = "Corpse Explosion"
     description: str = "Blows up a corpse at start of turn, damaging enemies."
-    trigger = TriggerType.TURN_START
+    trigger_type = TriggerType.TURN_START
     amount: int = 2
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -248,7 +248,7 @@ class CorpseExplosion(Ability):
 class AcidBurst(Ability):
     name: str = "Acid Burst"
     description: str = "Explodes violently after death."
-    trigger = TriggerType.DEATH
+    trigger_type = TriggerType.DEATH
     amount: int = 3
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
@@ -272,7 +272,7 @@ class AcidBurst(Ability):
 class Inspire(Ability):
     name: str = "Inspire"
     description: str = "Inspire front ally to attack"
-    trigger = TriggerType.TURN_START
+    trigger_type = TriggerType.TURN_START
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         if ally_slots[0].content and ally_slots[0].content != self.caster:
@@ -291,7 +291,7 @@ class Inspire(Ability):
 class Potion(Ability):
     name: str = "Potion"
     description: str = "If health below 3, heal to max health"
-    trigger = TriggerType.TURN_START
+    trigger_type = TriggerType.TURN_START
 
     def determine_targets(self, ally_slots: list["CombatSlot"], enemy_slots: list["CombatSlot"]) -> None:
         if self.caster.health < 3 and self.caster.ability_charges and self.caster.ability_charges > 0:

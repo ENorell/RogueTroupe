@@ -1,4 +1,4 @@
-from typing import Final, Type
+from typing import Final
 import pygame
 import logging
 from functools import lru_cache
@@ -7,32 +7,13 @@ from typing import Self
 from core.interfaces import UserInput
 from core.state_machine import State, StateChoice
 from core.renderer import PygameRenderer
-from components.character import Character, Tankylosaurus, Macedon, Healamimus, Dilophmageras, Tripiketops, Velocirougue, Archeryptrx
-from components.character_slot import CharacterSlot, CombatSlot, ShopSlot, generate_characters
+from components.character_slot import CharacterSlot, CombatSlot, ShopSlot
+from components.character_pool import generate_characters, CHARACTER_TIERS, TIER_PROBABILITIES
 from components.drag_dropper import DragDropper, draw_drag_dropper
 from components.interactable import Button, draw_button
 from assets.images import IMAGES, ImageChoice
-from settings import  Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, DEFAULT_TEXT_SIZE, BLACK_COLOR, RED_COLOR
+from settings import Vector, DISPLAY_WIDTH, DISPLAY_HEIGHT, DEFAULT_TEXT_SIZE, BLACK_COLOR, RED_COLOR
 
-
-# Function to dynamically create CHARACTER_TIERS dictionary
-def create_character_tiers() -> dict[int, list[Type[Character]]]:
-    character_classes = Character.__subclasses__()
-    character_tiers: dict[int, list[Type[Character]]] = {}
-    for character_class in character_classes:
-        tier = character_class.tier
-        if tier == 0:
-            continue
-        if tier not in character_tiers:
-            character_tiers[tier] = []
-        character_tiers[tier].append(character_class)
-    return character_tiers
-
-# Combined tier dictionary for reference
-CHARACTER_TIERS = create_character_tiers()
-
-# Configurable probabilities for each tier
-TIER_PROBABILITIES = [0.9, 0.08, 0.015, 0.005]
 
 STARTING_GOLD: Final[int] = 10
 REROLL_COST: Final[int] = 1
@@ -128,7 +109,7 @@ class ShopState(State):
         self.gold = STARTING_GOLD
 
     def start_state(self) -> None:
-        generate_characters(self.shop_slots,CHARACTER_TIERS,TIER_PROBABILITIES)
+        generate_characters(self.shop_slots, CHARACTER_TIERS, TIER_PROBABILITIES)
 
     def is_there_allies(self) -> bool:
         return bool(self.ally_slots)
@@ -136,7 +117,7 @@ class ShopState(State):
     def reroll_shop(self) -> None:
         if self.gold >= REROLL_COST:
             self.gold -= REROLL_COST
-            generate_characters(self.shop_slots,CHARACTER_TIERS,TIER_PROBABILITIES)
+            generate_characters(self.shop_slots, CHARACTER_TIERS, TIER_PROBABILITIES)
 
     def loop(self, user_input: UserInput) -> None:
         self.drag_dropper.loop(user_input)
@@ -176,7 +157,7 @@ class ShopState(State):
                 break
 
 
-def draw_gold(shop_frame, balance):
+def draw_gold(shop_frame: pygame.Surface, balance: int):
     gold_text_position = (GOLD_ICON_POSITION[0] + 103, GOLD_ICON_POSITION[1] + 45)
     shop_frame.blit(gold_back_image, GOLD_BACK_POSITION)
     shop_frame.blit(gold_icon_image, GOLD_ICON_POSITION)

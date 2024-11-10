@@ -1,6 +1,5 @@
-from pygame import Surface, Rect, draw, transform
-from typing import Final, Optional, Sequence, Type
-from random import choices,choice
+from pygame import Surface, Rect, transform
+from typing import Final, Optional
 from components.interactable import Interactable,Button
 from components.character import Character
 from settings import Color, Vector, BLACK_COLOR, DISPLAY_WIDTH
@@ -123,16 +122,6 @@ def create_reward_slots() -> list[ShopSlot]:
             )
             slots.append(ShopSlot((x_position, top_left_y), SHOP_SLOT_COLOR))
     return slots
-
-
-def generate_characters(slots: Sequence['CharacterSlot'], character_tiers: dict[int, list[Type[Character]]], tier_probabilities: list[float]) -> None:
-    for slot in slots:
-        # Select tier based on configured probabilities
-        selected_tier = choices(list(character_tiers.keys()), weights=tier_probabilities, k=1)[0]
-        # Randomly select a character type from the chosen tier
-        character_type = choice(character_tiers[selected_tier])
-        # Assign character to the slot
-        slot.content = character_type()
 
 
 def draw_slot(frame: Surface, character_slot: CharacterSlot) -> None:
