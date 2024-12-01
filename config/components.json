@@ -1,0 +1,65 @@
+[
+    {
+        "name" : "Cannon 1",
+        "type":"weapon",
+        "coordinates": [
+            [0,0]
+        ]
+    },
+    {
+        "name" : "Cannon 2",
+        "type":"weapon",
+        "coordinates": [
+            [0,0],[1,0]
+        ]
+    },
+    {
+        "name" : "Cannon 3",
+        "type":"weapon",
+        "coordinates": [
+            [0,0],[1,0],[2,0]
+        ]
+    },
+    {
+        "name" : "Cannon 4",
+        "type":"weapon",
+        "coordinates": [
+            [0,0],[1,0],[2,0],[3,0]
+        ]
+    },
+    {
+        "name" : "Shield 1",
+        "type":"shield",
+        "coordinates": [
+            [0,0],[1,0]
+        ]
+    },
+    {
+        "name" : "Shield 2",
+        "type":"shield",
+        "coordinates": [
+            [0,0],[1,0],[0,1],[1,1]
+        ]
+    },
+    {
+        "name" : "Booster 1",
+        "type":"booster",
+        "coordinates": [
+            [0,0]
+        ]
+    },
+    {
+        "name" : "Booster 2",
+        "type":"booster",
+        "coordinates": [
+            [0,0],[0,1]
+        ]
+    },
+    {
+        "name" : "Plating 1",
+        "type":"plating",
+        "coordinates": [
+            [0,0]
+        ]
+    }
+]
