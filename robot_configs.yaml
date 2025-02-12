@@ -1,0 +1,61 @@
+beta:
+  rarity: Common
+  health: 5
+  nodes: [
+    [0,0],
+    [0,1],
+    [0,2], [1,2]
+    ]
+  asset:
+    path: .\assets\Sprite-0002.png
+    size: [210,210]
+    offset: [-107,-195]
+
+boba:
+  rarity: Common
+  health: 5
+  nodes: [
+    [0,0], [1,0],
+    [0,1], [1,1]
+    ]
+  asset:
+    path: .\assets\Sprite-0003.png
+    size: [210,210]
+    offset: [-97,-225]
+
+omega:
+  rarity: Rare
+  health: 2
+  nodes: [
+    [0,0],
+    [0,1], [1,1], [2,1], [3,1]
+    ]
+  asset:
+    path: .\assets\Sprite-0004.png
+    size: [210,210]
+    offset: [-73,-225]
+
+alpha:
+  rarity: Common
+  health: 5
+  nodes: [
+    [0,0],        [2,0],
+    [0,1], [1,1], [2,1]
+    ]
+  asset:
+    path: .\assets\Sprite-0005.png
+    size: [210,210]
+    offset: [-90,-240]
+
+gamma:
+  rarity: Common
+  health: 5
+  nodes: [
+                  [2,0], [3,0],
+           [1,1], [2,1],
+    [0,2], [1,2]
+    ]
+  asset:
+    path: .\assets\Sprite-0006.png
+    size: [210,210]
+    offset: [-76,-217]
