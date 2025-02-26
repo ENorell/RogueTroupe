@@ -1,17 +1,18 @@
 from math import sqrt
 from dataclasses import dataclass
-from typing import Optional, Final, Self
+from typing import Optional, Final, Self, Protocol
 from enum import Enum, auto
 import pygame
 from core.interfaces import UserInput
 from settings import Vector, BLUE_COLOR, GREEN_COLOR, BLACK_COLOR
-
+from assets.images import AssetManager, ImageChoice
 
 CELL_PIXEL_SIZE: Final[int] = 30
+CHASSI_RELATIVE_CHARACTER_OFFSET = pygame.Vector2(5,-50)
 
 
 @dataclass
-class Point:
+class Point: #Node?
     x: int
     y: int
 
@@ -24,44 +25,82 @@ class Point:
     def __mul__(self, multiplier) -> "Point":
         return Point(self.x * multiplier, self.y * multiplier)
 
-    def distance(self, other: "Point") -> float:
+    def distance(self, other: "Point") -> float: # just do abs?
         return sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
 
 
-class ComponentRenderer:
+class ComponentRenderer(Protocol):
+    """Abstract interface for component renderer"""
+    def draw_idle(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
+        ...
+    def draw_highlight(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
+        ...
+    def draw_on_mouse(self, frame: pygame.Surface, mouse_position: Vector, component: "Component") -> None:
+        ...
+
+
+class AssetComponentRenderer:
+    def __init__(self, local_origin: pygame.Vector2, asset_manager: AssetManager, image_choice: ImageChoice) -> None:
+        self.local_origin: pygame.Vector2 = local_origin
+        self.asset_manager: AssetManager = asset_manager
+        self.image_choice: ImageChoice = image_choice
+
+    def draw_idle(self, frame: pygame.Surface) -> None:
+        image: pygame.Surface = self.asset_manager[self.image_choice]
+
+        frame.blit(image, self.local_origin)
+
+    def draw_highlight(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
+        ...
+    def draw_on_mouse(self, frame: pygame.Surface, mouse_position: Vector, component: "Component") -> None:
+        ...
+
+
+class SimpleComponentRenderer:
+    """Concreate implementation that draws a component as a simple group of colored circles"""
     radius: int = CELL_PIXEL_SIZE//2
 
-    def get_center_pixel(self, origin_position: Vector, attachment_point: Point, cell_point: Point) -> Vector:
+    def _get_center_pixel(self, origin_position: Vector, attachment_point: Point, cell_point: Point) -> Vector:
         relative_point = cell_point + attachment_point
         position_x, position_y = origin_position
         return position_x + CELL_PIXEL_SIZE * relative_point.x, position_y + CELL_PIXEL_SIZE * relative_point.y
 
-    def draw(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
+    def _draw_circle_with_boundary(self, frame: pygame.Surface, center_position: Vector) -> None:
+        pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLUE_COLOR)
+        pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLACK_COLOR, width=2)
+
+    def _draw_circle_without_boundary(self, frame: pygame.Surface, center_position: Vector) -> None:
+        pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLUE_COLOR)
+
+    def draw_idle(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
         assert component.attachment_point
         for point in component.points:
-            relative_point = point + component.attachment_point
-            position_x, position_y = position
-            point_position = (position_x + CELL_PIXEL_SIZE*relative_point.x, position_y + CELL_PIXEL_SIZE*relative_point.y)
-            pygame.draw.circle(frame, center=point_position, radius=self.radius, color = BLUE_COLOR)
+            center_position = self._get_center_pixel(position, component.attachment_point, point)
+            self._draw_circle_without_boundary(frame, center_position)
 
     def draw_highlight(self, frame: pygame.Surface, position: Vector, component: "Component") -> None:
         assert component.attachment_point
         for point in component.points:
-            center_position = self.get_center_pixel(position, component.attachment_point, point)
-            pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLUE_COLOR)
-            pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLACK_COLOR, width = 2)
+            center_position = self._get_center_pixel(position, component.attachment_point, point)
+            self._draw_circle_with_boundary(frame, center_position)
 
     def draw_on_mouse(self, frame: pygame.Surface, mouse_position: Vector, component: "Component") -> None:
         for point in component.points:
-            center_position = self.get_center_pixel(mouse_position, Point(0,0), point)
-            pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLUE_COLOR)
-            pygame.draw.circle(frame, center=center_position, radius=self.radius, color=BLACK_COLOR, width = 2)
+            center_position = self._get_center_pixel(mouse_position, Point(0,0), point)
+            self._draw_circle_with_boundary(frame, center_position)
+
+
+class ComponentContent(Protocol):
+    is_done: bool
+    def activate(self) -> None:
+        ...
 
 
 class Component:
-    def __init__(self, points: list[Point], render: ComponentRenderer, content = None) -> None:
-        self.points = points
-        self.render = render
+    def __init__(self, points: list[Point], renderer: ComponentRenderer, content: Optional[ComponentContent] = None) -> None:
+        self.points: list[Point] = points
+        self.content: Optional[ComponentContent] = content # Not implemented
+        self.renderer: ComponentRenderer = renderer
         self.attachment_point: Optional[Point] = None
         self.attachment_cells: list["Cell"] = []
 
@@ -73,26 +112,32 @@ class Component:
         self.attachment_point = None
         self.attachment_cells = []
 
+    # draw_in_place
     def draw(self, frame: pygame.Surface, position: Vector) -> None:
         for cell in self.attachment_cells:
             if cell.hover_detector.is_hovered:
-                self.render.draw_highlight(frame, position, self)
+                self.renderer.draw_highlight(frame, position, self)
                 return
-        self.render.draw(frame, position, self)
+        self.renderer.draw_idle(frame, position, self)
 
     def draw_on_mouse(self, frame: pygame.Surface, mouse_position: Vector) -> None:
-        self.render.draw_on_mouse(frame, mouse_position, self)
+        self.renderer.draw_on_mouse(frame, mouse_position, self)
 
 
-class CellRenderer:
-    @staticmethod
-    def draw(frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
-        box = get_cell_box(position, cell.point)
+class CellRenderer(Protocol):
+    def draw(self, frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
+        ...
+    def draw_highlighted(self, frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
+        ...
+
+
+class SimpleCellRenderer:
+    def draw(self, frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
+        box = get_cell_box(pygame.Vector2(position), cell.point) # position is tuple and rest is Vector2...
         pygame.draw.rect(frame, rect=box, color=BLACK_COLOR, width=2)
 
-    @staticmethod
-    def draw_filled(frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
-        box = get_cell_box(position, cell.point)
+    def draw_highlighted(self, frame: pygame.Surface, position: Vector, cell: "Cell") -> None:
+        box = get_cell_box(pygame.Vector2(position), cell.point)
         pygame.draw.rect(frame, rect=box, color=GREEN_COLOR)
 
 
@@ -100,12 +145,13 @@ class CellHoverDetector:
     def __init__(self) -> None:
         self.is_hovered: bool = False
 
-    def detect(self, origin_position: Vector, mouse_position: Vector, cell: "Cell") -> bool:
+    def detect(self, origin_position: pygame.Vector2, mouse_position: Vector, cell: "Cell") -> bool:
         box = get_cell_box(origin_position, cell.point)
         self.is_hovered = box.collidepoint(mouse_position)
         return self.is_hovered
 
-def get_cell_box(origin_position: Vector, cell_point: Point) -> pygame.Rect:
+
+def get_cell_box(origin_position: pygame.Vector2, cell_point: Point) -> pygame.Rect:
     origin_x, origin_y = origin_position
     cell_position_x = origin_x + cell_point.x * CELL_PIXEL_SIZE - CELL_PIXEL_SIZE/2
     cell_position_y = origin_y + cell_point.y * CELL_PIXEL_SIZE - CELL_PIXEL_SIZE/2
@@ -119,10 +165,10 @@ class Cell:
     renderer: CellRenderer
     component: Optional[Component] = None
 
-    def set_content(self, component: Component):
+    def set_content(self, component: Component) -> None:
         self.component = component
 
-    def clear(self):
+    def clear(self) -> None:
         self.component = None
 
     @property
@@ -131,39 +177,41 @@ class Cell:
 
     def draw(self, frame: pygame.Surface, position: Vector) -> None:
         if self.hover_detector.is_hovered:
-            self.renderer.draw_filled(frame, position, self)
+            self.renderer.draw_highlighted(frame, position, self)
         else:
             self.renderer.draw(frame, position, self)
 
-    def is_hovered(self, origin_position: Vector, mouse_position: Vector) -> bool:
-        return self.hover_detector.detect(origin_position, mouse_position, self)
+    def is_hovered(self, origin_position: pygame.Vector2, mouse_position: Vector) -> bool:
+        return self.hover_detector.detect(origin_position+CHASSI_RELATIVE_CHARACTER_OFFSET, mouse_position, self)
 
     @classmethod
     def create(cls, point: Point) -> "Cell":
         hover_detector = CellHoverDetector()
-        renderer = CellRenderer()
+        renderer = SimpleCellRenderer()
         return cls(point, hover_detector, renderer)
 
 
 class ChassiRenderer:
+
     @staticmethod
     def draw(frame: pygame.Surface, chassi: "Chassi") -> None:
         for cell in chassi.cells:
-            cell.draw(frame, chassi.position)
+            cell.draw(frame, chassi.local_origin + CHASSI_RELATIVE_CHARACTER_OFFSET)
 
         for component in chassi.components:
-            component.draw(frame, chassi.position)
+            component.draw(frame, chassi.local_origin + CHASSI_RELATIVE_CHARACTER_OFFSET)
 
 
 class NoSpaceException(Exception):
     """Raised when attempting to insert a component into a cell where it cannot fit"""
     pass
 
+
 @dataclass
 class Chassi:
-    position: Vector
+    local_origin: pygame.Vector2 #top_left_position
     cells: list[Cell]
-    render: ChassiRenderer
+    renderer: ChassiRenderer
     components: list[Component]
 
     def add_cell(self, cell: Cell) -> None:
@@ -184,20 +232,31 @@ class Chassi:
         for cell in self.cells:
             if cell.point == point:
                 return cell
+        return None
 
     def get_hovered_cell(self, mouse_position: Vector) -> Optional[Cell]:
         hover_cell: Optional[Cell] = None
         for cell in self.cells:
-            if cell.is_hovered(self.position, mouse_position):
+            if cell.is_hovered(self.local_origin, mouse_position):
                 hover_cell = cell
         return hover_cell
 
     # CellCluster class from above methods?
+    
+    def add_component_in_any_cell(self, component: Component) -> None:
+        for cell in self.cells:
+            try:
+                self.add_component(cell, component)
+                return
+            except NoSpaceException: # Weird to catch the error and then raise it again?
+                continue
+        raise NoSpaceException(f"No vacant cell in {self}")
+
 
     def add_component(self, target_cell: Cell, component: Component) -> None:
         assert target_cell in self.cells
 
-        candidate_cells = []
+        candidate_cells: list[Cell] = []
         for component_point in component.points:
             frame_point = target_cell.point + component_point
             frame_cell = self.get_cell(frame_point)
@@ -218,23 +277,26 @@ class Chassi:
         component.deattach()
 
     def draw(self, frame: pygame.Surface) -> None:
-        self.render.draw(frame, self)
+        self.renderer.draw(frame, self)
 
     def get_hovered_component(self, mouse_position: Vector) -> Optional[Component]:
         hovered_cell = self.get_hovered_cell(mouse_position)
         for component in self.components:
             if hovered_cell in component.attachment_cells:
                 return component
+        return None
 
-    @classmethod # Not really necessary anymore
-    def create_empty(cls, position: Vector, cells: list[Cell]) -> Self:
+    @classmethod
+    def from_points(cls, position: pygame.Vector2, points: list[tuple]) -> Self:
         chassi_renderer = ChassiRenderer()
+        cells: list[Cell] = [Cell.create(Point(*point)) for point in points]
         return cls(position, cells, chassi_renderer, [])
 
 
 class DragdropperState(Enum):
     HOVERING = auto()
     DRAGGING = auto()
+
 
 class ComponentDragDropper:
     def __init__(self, chassis: list[Chassi]) -> None:
@@ -302,7 +364,6 @@ class ComponentDragDropper:
             self.previous_attached_chassi.add_component(self.previous_attached_cell, self.detached)
 
     def draw(self, frame: pygame.Surface) -> None:
-
         for chassi in self.chassis:
             chassi.draw(frame)
 
@@ -312,26 +373,38 @@ class ComponentDragDropper:
         assert self.detached
         self.detached.draw_on_mouse(frame, self.mouse_position)
 
+    #@classmethod
+    #def from_robots(cls, robots: list["Robot"])
+
+
+
+
+
+
+
+
+## Make RobotLoader with Pydantic!
 
 ### Test Scenario ###
 
 if __name__ == "__main__":
 
-    cell_frame_cells1 = [Cell.create(Point(0,0)), Cell.create(Point(1,0)), Cell.create(Point(2,0)),
-                         Cell.create(Point(0,1)), Cell.create(Point(1,1))
-                        ]
-    chassi1 = Chassi.create_empty((100,100), cell_frame_cells1)
+    cell_frame_cells1: list[Cell] = [
+        Cell.create(Point(0,0)), Cell.create(Point(1,0)), Cell.create(Point(2,0)),
+        Cell.create(Point(0,1)), Cell.create(Point(1,1))
+        ]
+    chassi1 = Chassi(pygame.Vector2(100,100), cell_frame_cells1, ChassiRenderer(), [])
 
-    cell_frame_cells2 = [Cell.create(Point(0,0)), Cell.create(Point(1,0)), Cell.create(Point(2,0)),
-                         Cell.create(Point(0,1)), Cell.create(Point(1,1)), Cell.create(Point(2,1)),
-                         Cell.create(Point(0,2))
-                        ]
-    chassi2 = Chassi.create_empty((300,100), cell_frame_cells2)
+    cell_frame_cells2: list[Cell] = [
+        Cell.create(Point(0,0)), Cell.create(Point(1,0)), Cell.create(Point(2,0)),
+        Cell.create(Point(0,1)), Cell.create(Point(1,1)), Cell.create(Point(2,1)),
+        Cell.create(Point(0,2))
+        ]
+    chassi2 = Chassi(pygame.Vector2(300,100), cell_frame_cells2, ChassiRenderer(), [])
 
-    component1 = Component([Point(0,0)], ComponentRenderer())
-    component2 = Component([Point(0,0), Point(1,0)], ComponentRenderer())
-    component3 = Component([Point(0,0), Point(1,0), Point(0,1)],
-                           ComponentRenderer())
+    component1 = Component([Point(0,0)],                         SimpleComponentRenderer())
+    component2 = Component([Point(0,0), Point(1,0)],             SimpleComponentRenderer())
+    component3 = Component([Point(0,0), Point(1,0), Point(0,1)], SimpleComponentRenderer())
 
     chassi1.add_component(cell_frame_cells1[0], component1)
     chassi1.add_component(cell_frame_cells1[1], component2)

@@ -1,22 +1,25 @@
-gun:
-  rarity: Common
-  health: 5
-  nodes: [
-    [0,0]
-    ]
-  asset: 
-    path: .\assets\gun2.png
-    size: [30,30]
-    offset: [-0,-0]
+-   gun:
+    asset: 
+        path: .\assets\gun2.png
+        size: [30,30]
+        offset: [-0,-0]
+    rarity: Common
+    nodes: [
+        [0,0]
+        ]
+    effect: 
+        damage: 1
 
-cannon:
-  rarity: Common
-  health: 5
-  nodes: [
-    [0,0],
-    [0,1]
-    ]
-  asset: 
-    path: .\assets\gun3.png
-    size: [30,60]
-    offset: [-0,-0]
+
+-   cannon:
+    asset: 
+        path: .\assets\gun3.png
+        size: [30,60]
+        offset: [-0,-0]
+    rarity: Common
+    nodes: [
+        [0,0],
+        [0,1]
+        ]
+    effect: 
+        damage: 1

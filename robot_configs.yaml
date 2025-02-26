@@ -59,3 +59,17 @@ gamma:
     path: .\assets\Sprite-0006.png
     size: [210,210]
     offset: [-76,-217]
+
+
+pixie:
+  rarity: Common
+  health: 5
+  nodes: [
+                  [2,0], [3,0],
+           [1,1], [2,1],
+    [0,2], [1,2]
+    ]
+  asset:
+    path: .\assets\pixie.png
+    size: [210,210]
+    offset: [-76,-217]

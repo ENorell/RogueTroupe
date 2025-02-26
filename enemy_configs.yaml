@@ -1,0 +1,36 @@
+-   name: lizard
+    asset: 
+        path: .\assets\characters\archer-transformed.png
+        size: [250,250]
+        offset: [-0,-0]
+        flip_x: true
+    health: 10
+    actions:
+    -   name: swipe
+        attack:
+            damage: 2
+            targets: [[0,0],[0,1]]
+        buff:
+    -   name: wait
+    -   name: eat
+        buff:
+            strength: 1
+
+
+-   name: raptor
+    asset: 
+        path: .\assets\characters\raptor2-transformed.webp
+        size: [250,250]
+        offset: [-0,-0]
+        flip_x: true
+    health: 3
+    actions:
+    -   name: skewer
+        attack:
+            damage: 2
+            targets: [[0,0],[0,1]]
+        buff:
+    -   name: wait
+    -   name: eat
+        buff:
+            strength: 1

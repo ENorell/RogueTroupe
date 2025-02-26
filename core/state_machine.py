@@ -1,6 +1,12 @@
 from abc import ABC, abstractmethod
 from typing import Optional
-from enum import Enum
+from enum import Enum, auto
+
+
+class StateChoice(Enum):
+    COMPONENT = auto()
+    ROBOT = auto()
+    COMBAT = auto()
 
 
 class State(ABC):
